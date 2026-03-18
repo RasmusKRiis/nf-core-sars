@@ -112,11 +112,12 @@ else
 fi
 
 # Optional IUPAC ambiguity remapping from allele frequencies.
-# Rewrites consensus.fasta in-place and also saves explicit iupac output.
+# Keeps ARTIC consensus unchanged and writes iupac to a separate FASTA.
 # Uses a BAM pileup branch to capture mixed SNP sites that may be filtered out
 # from ARTIC's pass/normalised VCF path.
 AMBIG_MIN=__AMBIGMIN__
 AMBIG_MAX=__AMBIGMAX__
+IUPAC_FASTA="__METAID__.consensus.iupac.fasta"
 IUPAC_REPORT="__METAID__.consensus.iupac.report.txt"
 {
   echo "sample=__METAID__"
@@ -126,25 +127,13 @@ IUPAC_REPORT="__METAID__.consensus.iupac.report.txt"
   echo "max_af=$AMBIG_MAX"
   echo "min_depth=49"
 } > "$IUPAC_REPORT"
+# Start IUPAC fasta from ARTIC consensus so downstream consensus is never altered.
+cp "__METAID__.consensus.fasta" "$IUPAC_FASTA"
 # Default iupac VCF output is a copy of original normalised VCF (overwritten if remapping succeeds)
 cp "__METAID__.normalised.vcf.gz" "__METAID__.normalised.iupac-af.vcf.gz"
 cp "__METAID__.normalised.vcf.gz.tbi" "__METAID__.normalised.iupac-af.vcf.gz.tbi"
 if [ "$(awk "BEGIN{print ($AMBIG_MIN>=0 && $AMBIG_MAX<=1 && $AMBIG_MIN<$AMBIG_MAX)?1:0}")" = "1" ]; then
-  PRECONS=""
-  MASK=""
   IUPAC_BAM=""
-
-  if [ -f "__METAID__.preconsensus.fasta" ]; then
-    PRECONS="__METAID__.preconsensus.fasta"
-  elif ls __METAID__/*.preconsensus.fasta >/dev/null 2>&1; then
-    for f in __METAID__/*.preconsensus.fasta; do PRECONS="$f"; break; done
-  fi
-
-  if [ -f "__METAID__.coverage_mask.txt" ]; then
-    MASK="__METAID__.coverage_mask.txt"
-  elif ls __METAID__/*.coverage_mask.txt >/dev/null 2>&1; then
-    for f in __METAID__/*.coverage_mask.txt; do MASK="$f"; break; done
-  fi
 
   if [ -f "__METAID__.primertrimmed.rg.sorted.bam" ]; then
     IUPAC_BAM="__METAID__.primertrimmed.rg.sorted.bam"
@@ -152,7 +141,7 @@ if [ "$(awk "BEGIN{print ($AMBIG_MIN>=0 && $AMBIG_MAX<=1 && $AMBIG_MIN<$AMBIG_MA
     for f in __METAID__/*.primertrimmed.rg.sorted.bam; do IUPAC_BAM="$f"; break; done
   fi
 
-  if [ -n "$PRECONS" ] && [ -n "$MASK" ] && [ -n "$IUPAC_BAM" ]; then
+  if [ -n "$IUPAC_BAM" ]; then
     echo "Applying IUPAC ambiguity consensus from BAM pileup using AF range [$AMBIG_MIN, $AMBIG_MAX]"
     PILEUP_TXT="__METAID__.pileup.txt"
     # Keep producing a VCF artifact for debugging/output while ambiguity calling is pileup-driven.
@@ -162,7 +151,7 @@ if [ "$(awk "BEGIN{print ($AMBIG_MIN>=0 && $AMBIG_MAX<=1 && $AMBIG_MIN<$AMBIG_MA
     [ -s "$PILEUP_VCF" ] && tabix -f -p vcf "$PILEUP_VCF" || true
 
     samtools mpileup -aa -A -d 0 -Q 0 -f "__REF__" "$IUPAC_BAM" > "$PILEUP_TXT"
-    python3 - "$PRECONS" "$PILEUP_TXT" "$AMBIG_MIN" "$AMBIG_MAX" "49" "__METAID__.consensus.fasta" "$IUPAC_REPORT" <<'PY'
+    python3 - "$IUPAC_FASTA" "$PILEUP_TXT" "$AMBIG_MIN" "$AMBIG_MAX" "49" "$IUPAC_FASTA" "$IUPAC_REPORT" <<'PY'
 import re
 import sys
 from collections import Counter
@@ -282,7 +271,7 @@ with open(report_path, "w") as rep:
     rep.write(f"min_depth={min_depth}\\n")
 PY
   else
-    echo "WARNING: Missing preconsensus/mask/primertrimmed-bam for IUPAC remapping; keeping ARTIC consensus unchanged." >&2
+    echo "WARNING: Missing primertrimmed-bam for IUPAC remapping; keeping ARTIC consensus unchanged." >&2
     {
       echo "status=missing_inputs"
       echo "changed_positions=0"
@@ -301,9 +290,6 @@ else
     echo "min_depth=49"
   } > "$IUPAC_REPORT"
 fi
-
-# Always publish an explicit IUPAC file (may match original if no ambiguous sites/AF fields)
-cp "__METAID__.consensus.fasta" "__METAID__.consensus.iupac.fasta"
 
 # Make header super simple: >__METAID__
 awk -v H=">__METAID__" '/^>/{print H; next} {print}' \
