@@ -233,7 +233,7 @@ changed = 0
 
 with open(pileup_path) as fh:
     for line in fh:
-        cols = line.rstrip("\n").split("\t")
+        cols = line.rstrip("\\n").split("\\t")
         if len(cols) < 5:
             continue
         pos = int(cols[1])
@@ -268,18 +268,18 @@ with open(pileup_path) as fh:
                 changed += 1
 
 with open(out_path, "w") as out:
-    out.write(header + "\n")
+    out.write(header + "\\n")
     s = "".join(seq)
     for i in range(0, len(s), 80):
-        out.write(s[i:i+80] + "\n")
+        out.write(s[i:i+80] + "\\n")
 
 print(f"IUPAC pileup remap changed_positions={changed}")
 with open(report_path, "w") as rep:
-    rep.write(f"status=success\n")
-    rep.write(f"changed_positions={changed}\n")
-    rep.write(f"min_af={min_af}\n")
-    rep.write(f"max_af={max_af}\n")
-    rep.write(f"min_depth={min_depth}\n")
+    rep.write(f"status=success\\n")
+    rep.write(f"changed_positions={changed}\\n")
+    rep.write(f"min_af={min_af}\\n")
+    rep.write(f"max_af={max_af}\\n")
+    rep.write(f"min_depth={min_depth}\\n")
 PY
   else
     echo "WARNING: Missing preconsensus/mask/primertrimmed-bam for IUPAC remapping; keeping ARTIC consensus unchanged." >&2
