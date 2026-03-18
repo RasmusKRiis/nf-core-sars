@@ -13,6 +13,8 @@ process ARTIC_MINION_M {
   output:
     tuple val(meta), path("${meta.id}.consensus.fasta"), emit: artic_consensus
     path("${meta.id}.consensus.fasta"), emit: artic_consensus_report
+    tuple val(meta), path("${meta.id}.consensus.iupac.fasta"), emit: artic_consensus_iupac
+    tuple val(meta), path("${meta.id}.consensus.artic-original.fasta"), emit: artic_consensus_original
     tuple val(meta),
           path("${meta.id}.primertrimmed.rg.sorted.bam"),
           path("${meta.id}.primertrimmed.rg.sorted.bam.bai"),
@@ -77,9 +79,10 @@ fi
 if [ "$CONS" != "__METAID__.consensus.fasta" ]; then
   cp "$CONS" "__METAID__.consensus.fasta"
 fi
+cp "__METAID__.consensus.fasta" "__METAID__.consensus.artic-original.fasta"
 
 # Optional IUPAC ambiguity remapping from allele frequencies.
-# Keeps original ARTIC consensus as backup and rewrites consensus.fasta in-place.
+# Rewrites consensus.fasta in-place and also saves explicit iupac output.
 AMBIG_MIN=__AMBIGMIN__
 AMBIG_MAX=__AMBIGMAX__
 if [ "$(awk "BEGIN{print ($AMBIG_MIN>=0 && $AMBIG_MAX<=1 && $AMBIG_MIN<$AMBIG_MAX)?1:0}")" = "1" ]; then
@@ -107,8 +110,6 @@ if [ "$(awk "BEGIN{print ($AMBIG_MIN>=0 && $AMBIG_MAX<=1 && $AMBIG_MIN<$AMBIG_MA
 
   if [ -n "$PRECONS" ] && [ -n "$NORMVCF" ] && [ -n "$MASK" ]; then
     echo "Applying IUPAC ambiguity consensus using AF range [$AMBIG_MIN, $AMBIG_MAX]"
-    cp "__METAID__.consensus.fasta" "__METAID__.consensus.artic-original.fasta"
-
     AF_EXPR=""
     if bcftools view -h "$NORMVCF" | grep -q '^##FORMAT=<ID=AF,'; then
       AF_EXPR="FMT/AF>=$AMBIG_MIN && FMT/AF<=$AMBIG_MAX"
@@ -133,10 +134,19 @@ else
   echo "WARNING: Invalid AF range for IUPAC remapping (min=$AMBIG_MIN max=$AMBIG_MAX); skipping." >&2
 fi
 
+# Always publish an explicit IUPAC file (may match original if no ambiguous sites/AF fields)
+cp "__METAID__.consensus.fasta" "__METAID__.consensus.iupac.fasta"
+
 # Make header super simple: >__METAID__
 awk -v H=">__METAID__" '/^>/{print H; next} {print}' \
   "__METAID__.consensus.fasta" > "__METAID__.consensus.tmp" && \
   mv "__METAID__.consensus.tmp" "__METAID__.consensus.fasta"
+awk -v H=">__METAID__" '/^>/{print H; next} {print}' \
+  "__METAID__.consensus.iupac.fasta" > "__METAID__.consensus.iupac.tmp" && \
+  mv "__METAID__.consensus.iupac.tmp" "__METAID__.consensus.iupac.fasta"
+awk -v H=">__METAID__" '/^>/{print H; next} {print}' \
+  "__METAID__.consensus.artic-original.fasta" > "__METAID__.consensus.artic-original.tmp" && \
+  mv "__METAID__.consensus.artic-original.tmp" "__METAID__.consensus.artic-original.fasta"
 
 # Grab primer-trimmed BAM for downstream depth analysis
 BAM_CANDIDATE=""
