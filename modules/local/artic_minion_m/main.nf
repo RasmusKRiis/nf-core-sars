@@ -100,10 +100,14 @@ if [ "$NORMVCF" != "__METAID__.normalised.vcf.gz" ]; then
   NORMVCF="__METAID__.normalised.vcf.gz"
 fi
 if [ -f "${NORMVCF}.tbi" ]; then
-  cp "${NORMVCF}.tbi" "__METAID__.normalised.vcf.gz.tbi"
+  if [ "${NORMVCF}.tbi" != "__METAID__.normalised.vcf.gz.tbi" ]; then
+    cp "${NORMVCF}.tbi" "__METAID__.normalised.vcf.gz.tbi"
+  fi
 else
   tabix -f -p vcf "$NORMVCF"
-  cp "${NORMVCF}.tbi" "__METAID__.normalised.vcf.gz.tbi"
+  if [ "${NORMVCF}.tbi" != "__METAID__.normalised.vcf.gz.tbi" ]; then
+    cp "${NORMVCF}.tbi" "__METAID__.normalised.vcf.gz.tbi"
+  fi
 fi
 
 # Optional IUPAC ambiguity remapping from allele frequencies.
