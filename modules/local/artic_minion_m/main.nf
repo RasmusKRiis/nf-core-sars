@@ -20,6 +20,8 @@ process ARTIC_MINION_M {
 
   script:
   def MODELOPT = (params.artic_model ? "--model ${params.artic_model}" : "").trim()
+  def AMBIGMIN = params.artic_iupac_min_af.toString()
+  def AMBIGMAX = params.artic_iupac_max_af.toString()
 
   def cmd = '''
 set -euo pipefail
@@ -76,8 +78,63 @@ if [ "$CONS" != "__METAID__.consensus.fasta" ]; then
   cp "$CONS" "__METAID__.consensus.fasta"
 fi
 
-# 🔧 Make header super simple: >__METAID__
-awk -v H=">__METAID__" 'BEGIN{repl=0} /^>/{print H; next} {print}' \
+# Optional IUPAC ambiguity remapping from allele frequencies.
+# Keeps original ARTIC consensus as backup and rewrites consensus.fasta in-place.
+AMBIG_MIN=__AMBIGMIN__
+AMBIG_MAX=__AMBIGMAX__
+if [ "$(awk "BEGIN{print ($AMBIG_MIN>=0 && $AMBIG_MAX<=1 && $AMBIG_MIN<$AMBIG_MAX)?1:0}")" = "1" ]; then
+  PRECONS=""
+  NORMVCF=""
+  MASK=""
+
+  if [ -f "__METAID__.preconsensus.fasta" ]; then
+    PRECONS="__METAID__.preconsensus.fasta"
+  elif ls __METAID__/*.preconsensus.fasta >/dev/null 2>&1; then
+    for f in __METAID__/*.preconsensus.fasta; do PRECONS="$f"; break; done
+  fi
+
+  if [ -f "__METAID__.normalised.vcf.gz" ]; then
+    NORMVCF="__METAID__.normalised.vcf.gz"
+  elif ls __METAID__/*.normalised.vcf.gz >/dev/null 2>&1; then
+    for f in __METAID__/*.normalised.vcf.gz; do NORMVCF="$f"; break; done
+  fi
+
+  if [ -f "__METAID__.coverage_mask.txt" ]; then
+    MASK="__METAID__.coverage_mask.txt"
+  elif ls __METAID__/*.coverage_mask.txt >/dev/null 2>&1; then
+    for f in __METAID__/*.coverage_mask.txt; do MASK="$f"; break; done
+  fi
+
+  if [ -n "$PRECONS" ] && [ -n "$NORMVCF" ] && [ -n "$MASK" ]; then
+    echo "Applying IUPAC ambiguity consensus using AF range [$AMBIG_MIN, $AMBIG_MAX]"
+    cp "__METAID__.consensus.fasta" "__METAID__.consensus.artic-original.fasta"
+
+    AF_EXPR=""
+    if bcftools view -h "$NORMVCF" | grep -q '^##FORMAT=<ID=AF,'; then
+      AF_EXPR="FMT/AF>=$AMBIG_MIN && FMT/AF<=$AMBIG_MAX"
+    elif bcftools view -h "$NORMVCF" | grep -q '^##INFO=<ID=AF,'; then
+      AF_EXPR="INFO/AF>=$AMBIG_MIN && INFO/AF<=$AMBIG_MAX"
+    elif bcftools view -h "$NORMVCF" | grep -q '^##FORMAT=<ID=AD,'; then
+      AF_EXPR="FMT/AD[1]/(FMT/AD[0]+FMT/AD[1])>=$AMBIG_MIN && FMT/AD[1]/(FMT/AD[0]+FMT/AD[1])<=$AMBIG_MAX"
+    fi
+
+    if [ -n "$AF_EXPR" ]; then
+      AMBIG_VCF="__METAID__.normalised.iupac-af.vcf.gz"
+      bcftools +setGT "$NORMVCF" -Oz -o "$AMBIG_VCF" -- -t q -n c:'0/1' -i "$AF_EXPR"
+      tabix -f -p vcf "$AMBIG_VCF"
+      bcftools consensus --iupac-codes -f "$PRECONS" "$AMBIG_VCF" -m "$MASK" -o "__METAID__.consensus.fasta"
+    else
+      echo "WARNING: Could not derive AF expression (no AF/AD fields). Keeping ARTIC consensus unchanged." >&2
+    fi
+  else
+    echo "WARNING: Missing preconsensus/normalised-vcf/mask for IUPAC remapping; keeping ARTIC consensus unchanged." >&2
+  fi
+else
+  echo "WARNING: Invalid AF range for IUPAC remapping (min=$AMBIG_MIN max=$AMBIG_MAX); skipping." >&2
+fi
+
+# Make header super simple: >__METAID__
+awk -v H=">__METAID__" '/^>/{print H; next} {print}' \
   "__METAID__.consensus.fasta" > "__METAID__.consensus.tmp" && \
   mv "__METAID__.consensus.tmp" "__METAID__.consensus.fasta"
 
@@ -123,6 +180,8 @@ grep -m1 '^>' "__METAID__.consensus.fasta" || true
     .replace('__GPFASTQ__', gp_fastq.toString())
     .replace('__THREADS__', task.cpus.toString())
     .replace('__NORMALISE__', params.artic_normalise.toString())
+    .replace('__AMBIGMIN__', AMBIGMIN)
+    .replace('__AMBIGMAX__', AMBIGMAX)
     .replace('__MODELOPT__', MODELOPT)
 
   return cmd
