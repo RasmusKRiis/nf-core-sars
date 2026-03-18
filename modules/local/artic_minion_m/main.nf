@@ -15,6 +15,8 @@ process ARTIC_MINION_M {
     path("${meta.id}.consensus.fasta"), emit: artic_consensus_report
     tuple val(meta), path("${meta.id}.consensus.iupac.fasta"), emit: artic_consensus_iupac
     tuple val(meta), path("${meta.id}.consensus.artic-original.fasta"), emit: artic_consensus_original
+    tuple val(meta), path("${meta.id}.normalised.vcf.gz"), path("${meta.id}.normalised.vcf.gz.tbi"), emit: artic_normalised_vcf
+    tuple val(meta), path("${meta.id}.normalised.iupac-af.vcf.gz"), path("${meta.id}.normalised.iupac-af.vcf.gz.tbi"), emit: artic_iupac_vcf
     tuple val(meta),
           path("${meta.id}.primertrimmed.rg.sorted.bam"),
           path("${meta.id}.primertrimmed.rg.sorted.bam.bai"),
@@ -81,25 +83,44 @@ if [ "$CONS" != "__METAID__.consensus.fasta" ]; then
 fi
 cp "__METAID__.consensus.fasta" "__METAID__.consensus.artic-original.fasta"
 
+# Locate and normalize the ARTIC normalised VCF as explicit process outputs
+NORMVCF=""
+if [ -f "__METAID__.normalised.vcf.gz" ]; then
+  NORMVCF="__METAID__.normalised.vcf.gz"
+elif ls __METAID__/*.normalised.vcf.gz >/dev/null 2>&1; then
+  for f in __METAID__/*.normalised.vcf.gz; do NORMVCF="$f"; break; done
+fi
+if [ -z "$NORMVCF" ]; then
+  echo "ERROR: Could not find ARTIC normalised VCF output." >&2
+  ls -R || true
+  exit 7
+fi
+if [ "$NORMVCF" != "__METAID__.normalised.vcf.gz" ]; then
+  cp "$NORMVCF" "__METAID__.normalised.vcf.gz"
+  NORMVCF="__METAID__.normalised.vcf.gz"
+fi
+if [ -f "${NORMVCF}.tbi" ]; then
+  cp "${NORMVCF}.tbi" "__METAID__.normalised.vcf.gz.tbi"
+else
+  tabix -f -p vcf "$NORMVCF"
+  cp "${NORMVCF}.tbi" "__METAID__.normalised.vcf.gz.tbi"
+fi
+
 # Optional IUPAC ambiguity remapping from allele frequencies.
 # Rewrites consensus.fasta in-place and also saves explicit iupac output.
 AMBIG_MIN=__AMBIGMIN__
 AMBIG_MAX=__AMBIGMAX__
+# Default iupac VCF output is a copy of original normalised VCF (overwritten if remapping succeeds)
+cp "__METAID__.normalised.vcf.gz" "__METAID__.normalised.iupac-af.vcf.gz"
+cp "__METAID__.normalised.vcf.gz.tbi" "__METAID__.normalised.iupac-af.vcf.gz.tbi"
 if [ "$(awk "BEGIN{print ($AMBIG_MIN>=0 && $AMBIG_MAX<=1 && $AMBIG_MIN<$AMBIG_MAX)?1:0}")" = "1" ]; then
   PRECONS=""
-  NORMVCF=""
   MASK=""
 
   if [ -f "__METAID__.preconsensus.fasta" ]; then
     PRECONS="__METAID__.preconsensus.fasta"
   elif ls __METAID__/*.preconsensus.fasta >/dev/null 2>&1; then
     for f in __METAID__/*.preconsensus.fasta; do PRECONS="$f"; break; done
-  fi
-
-  if [ -f "__METAID__.normalised.vcf.gz" ]; then
-    NORMVCF="__METAID__.normalised.vcf.gz"
-  elif ls __METAID__/*.normalised.vcf.gz >/dev/null 2>&1; then
-    for f in __METAID__/*.normalised.vcf.gz; do NORMVCF="$f"; break; done
   fi
 
   if [ -f "__METAID__.coverage_mask.txt" ]; then
