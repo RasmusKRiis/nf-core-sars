@@ -112,6 +112,8 @@ fi
 
 # Optional IUPAC ambiguity remapping from allele frequencies.
 # Rewrites consensus.fasta in-place and also saves explicit iupac output.
+# Uses a BAM pileup branch to capture mixed SNP sites that may be filtered out
+# from ARTIC's pass/normalised VCF path.
 AMBIG_MIN=__AMBIGMIN__
 AMBIG_MAX=__AMBIGMAX__
 # Default iupac VCF output is a copy of original normalised VCF (overwritten if remapping succeeds)
@@ -120,6 +122,7 @@ cp "__METAID__.normalised.vcf.gz.tbi" "__METAID__.normalised.iupac-af.vcf.gz.tbi
 if [ "$(awk "BEGIN{print ($AMBIG_MIN>=0 && $AMBIG_MAX<=1 && $AMBIG_MIN<$AMBIG_MAX)?1:0}")" = "1" ]; then
   PRECONS=""
   MASK=""
+  IUPAC_BAM=""
 
   if [ -f "__METAID__.preconsensus.fasta" ]; then
     PRECONS="__METAID__.preconsensus.fasta"
@@ -133,27 +136,34 @@ if [ "$(awk "BEGIN{print ($AMBIG_MIN>=0 && $AMBIG_MAX<=1 && $AMBIG_MIN<$AMBIG_MA
     for f in __METAID__/*.coverage_mask.txt; do MASK="$f"; break; done
   fi
 
-  if [ -n "$PRECONS" ] && [ -n "$NORMVCF" ] && [ -n "$MASK" ]; then
-    echo "Applying IUPAC ambiguity consensus using AF range [$AMBIG_MIN, $AMBIG_MAX]"
-    AF_EXPR=""
-    if bcftools view -h "$NORMVCF" | grep -q '^##FORMAT=<ID=AF,'; then
-      AF_EXPR="FMT/AF>=$AMBIG_MIN && FMT/AF<=$AMBIG_MAX"
-    elif bcftools view -h "$NORMVCF" | grep -q '^##INFO=<ID=AF,'; then
-      AF_EXPR="INFO/AF>=$AMBIG_MIN && INFO/AF<=$AMBIG_MAX"
-    elif bcftools view -h "$NORMVCF" | grep -q '^##FORMAT=<ID=AD,'; then
-      AF_EXPR="FMT/AD[1]/(FMT/AD[0]+FMT/AD[1])>=$AMBIG_MIN && FMT/AD[1]/(FMT/AD[0]+FMT/AD[1])<=$AMBIG_MAX"
-    fi
+  if [ -f "__METAID__.primertrimmed.rg.sorted.bam" ]; then
+    IUPAC_BAM="__METAID__.primertrimmed.rg.sorted.bam"
+  elif ls __METAID__/*.primertrimmed.rg.sorted.bam >/dev/null 2>&1; then
+    for f in __METAID__/*.primertrimmed.rg.sorted.bam; do IUPAC_BAM="$f"; break; done
+  fi
 
-    if [ -n "$AF_EXPR" ]; then
+  if [ -n "$PRECONS" ] && [ -n "$MASK" ] && [ -n "$IUPAC_BAM" ]; then
+    echo "Applying IUPAC ambiguity consensus from BAM pileup using AF range [$AMBIG_MIN, $AMBIG_MAX]"
+    PILEUP_VCF="__METAID__.pileup.calls.vcf.gz"
+    if bcftools mpileup -f "__REF__" -a FORMAT/AD,FORMAT/DP -Ou "$IUPAC_BAM" | \
+      bcftools call -mv -Ou | \
+      bcftools +fill-tags -Oz -o "$PILEUP_VCF" -- -t AF; then
+      tabix -f -p vcf "$PILEUP_VCF"
+      AF_EXPR="TYPE=\"snp\" && INFO/AF[0]>=$AMBIG_MIN && INFO/AF[0]<=$AMBIG_MAX"
       AMBIG_VCF="__METAID__.normalised.iupac-af.vcf.gz"
-      bcftools +setGT "$NORMVCF" -Oz -o "$AMBIG_VCF" -- -t q -n c:'0/1' -i "$AF_EXPR"
-      tabix -f -p vcf "$AMBIG_VCF"
-      bcftools consensus --iupac-codes -f "$PRECONS" "$AMBIG_VCF" -m "$MASK" -o "__METAID__.consensus.fasta"
+      if bcftools +setGT "$PILEUP_VCF" -Oz -o "$AMBIG_VCF" -- -t q -n c:'0/1' -i "$AF_EXPR"; then
+        tabix -f -p vcf "$AMBIG_VCF"
+        HET_COUNT=$(bcftools query -f '[%GT\n]' "$AMBIG_VCF" | grep -Ec '(^|[[:space:]])(0[\\/|]1|1[\\/|]0)($|[[:space:]])' || true)
+        echo "IUPAC remap heterozygous SNP genotypes in remapped VCF: ${HET_COUNT}"
+        bcftools consensus --iupac-codes -f "$PRECONS" "$AMBIG_VCF" -m "$MASK" -o "__METAID__.consensus.fasta"
+      else
+        echo "WARNING: setGT remapping failed for pileup VCF; keeping ARTIC consensus unchanged." >&2
+      fi
     else
-      echo "WARNING: Could not derive AF expression (no AF/AD fields). Keeping ARTIC consensus unchanged." >&2
+      echo "WARNING: pileup-based VCF generation failed; keeping ARTIC consensus unchanged." >&2
     fi
   else
-    echo "WARNING: Missing preconsensus/normalised-vcf/mask for IUPAC remapping; keeping ARTIC consensus unchanged." >&2
+    echo "WARNING: Missing preconsensus/mask/primertrimmed-bam for IUPAC remapping; keeping ARTIC consensus unchanged." >&2
   fi
 else
   echo "WARNING: Invalid AF range for IUPAC remapping (min=$AMBIG_MIN max=$AMBIG_MAX); skipping." >&2

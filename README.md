@@ -76,8 +76,8 @@ nextflow run main.nf -profile docker --runid runid_name  --primerdir primer_fold
 - `--primer_bed` (optional): BED file describing the primer scheme used for ARTIC, depth analysis and primer QC. If omitted, the pipeline tries to resolve a `.scheme.bed` file from `--primerdir`.
 - `--reference` (optional): Reference FASTA for ARTIC consensus. If omitted, the pipeline tries to resolve a `*.reference.fasta` file from `--primerdir`.
 - `--primer_fasta` (optional): Explicit path to the FASTA file containing the primer sequences. If omitted, the pipeline tries to resolve `primers.fasta` relative to `--primerdir` or the BED file.
-- `--artic_iupac_min_af` (default: `0.15`): Lower AF bound for converting mixed sites to IUPAC ambiguity codes in final ARTIC consensus.
-- `--artic_iupac_max_af` (default: `0.85`): Upper AF bound for converting mixed sites to IUPAC ambiguity codes in final ARTIC consensus.
+- `--artic_iupac_min_af` (default: `0.30`): Lower AF bound for converting mixed SNP sites to IUPAC ambiguity codes in final ARTIC consensus.
+- `--artic_iupac_max_af` (default: `0.70`): Upper AF bound for converting mixed SNP sites to IUPAC ambiguity codes in final ARTIC consensus.
 - `--file primercheck-workflow`: Run the FASTA-only primer QC workflow.
 
 All parameters are detailed in the `nextflow.config` file.
