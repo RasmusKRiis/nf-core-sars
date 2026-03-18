@@ -15,6 +15,7 @@ process ARTIC_MINION_M {
     path("${meta.id}.consensus.fasta"), emit: artic_consensus_report
     tuple val(meta), path("${meta.id}.consensus.iupac.fasta"), emit: artic_consensus_iupac
     tuple val(meta), path("${meta.id}.consensus.artic-original.fasta"), emit: artic_consensus_original
+    tuple val(meta), path("${meta.id}.consensus.iupac.report.txt"), emit: artic_consensus_iupac_report
     tuple val(meta), path("${meta.id}.normalised.vcf.gz"), path("${meta.id}.normalised.vcf.gz.tbi"), emit: artic_normalised_vcf
     tuple val(meta), path("${meta.id}.normalised.iupac-af.vcf.gz"), path("${meta.id}.normalised.iupac-af.vcf.gz.tbi"), emit: artic_iupac_vcf
     tuple val(meta),
@@ -116,6 +117,15 @@ fi
 # from ARTIC's pass/normalised VCF path.
 AMBIG_MIN=__AMBIGMIN__
 AMBIG_MAX=__AMBIGMAX__
+IUPAC_REPORT="__METAID__.consensus.iupac.report.txt"
+{
+  echo "sample=__METAID__"
+  echo "status=not_run"
+  echo "changed_positions=0"
+  echo "min_af=$AMBIG_MIN"
+  echo "max_af=$AMBIG_MAX"
+  echo "min_depth=49"
+} > "$IUPAC_REPORT"
 # Default iupac VCF output is a copy of original normalised VCF (overwritten if remapping succeeds)
 cp "__METAID__.normalised.vcf.gz" "__METAID__.normalised.iupac-af.vcf.gz"
 cp "__METAID__.normalised.vcf.gz.tbi" "__METAID__.normalised.iupac-af.vcf.gz.tbi"
@@ -144,29 +154,152 @@ if [ "$(awk "BEGIN{print ($AMBIG_MIN>=0 && $AMBIG_MAX<=1 && $AMBIG_MIN<$AMBIG_MA
 
   if [ -n "$PRECONS" ] && [ -n "$MASK" ] && [ -n "$IUPAC_BAM" ]; then
     echo "Applying IUPAC ambiguity consensus from BAM pileup using AF range [$AMBIG_MIN, $AMBIG_MAX]"
+    PILEUP_TXT="__METAID__.pileup.txt"
+    # Keep producing a VCF artifact for debugging/output while ambiguity calling is pileup-driven.
     PILEUP_VCF="__METAID__.pileup.calls.vcf.gz"
-    if bcftools mpileup -f "__REF__" -a FORMAT/AD,FORMAT/DP -Ou "$IUPAC_BAM" | \
-      bcftools call -mv -Ou | \
-      bcftools +fill-tags -Oz -o "$PILEUP_VCF" -- -t AF; then
-      tabix -f -p vcf "$PILEUP_VCF"
-      AF_EXPR="TYPE=\"snp\" && INFO/AF[0]>=$AMBIG_MIN && INFO/AF[0]<=$AMBIG_MAX"
-      AMBIG_VCF="__METAID__.normalised.iupac-af.vcf.gz"
-      if bcftools +setGT "$PILEUP_VCF" -Oz -o "$AMBIG_VCF" -- -t q -n c:'0/1' -i "$AF_EXPR"; then
-        tabix -f -p vcf "$AMBIG_VCF"
-        HET_COUNT=$(bcftools query -f '[%GT\n]' "$AMBIG_VCF" | grep -Ec '(^|[[:space:]])(0[\\/|]1|1[\\/|]0)($|[[:space:]])' || true)
-        echo "IUPAC remap heterozygous SNP genotypes in remapped VCF: ${HET_COUNT}"
-        bcftools consensus --iupac-codes -f "$PRECONS" "$AMBIG_VCF" -m "$MASK" -o "__METAID__.consensus.fasta"
-      else
-        echo "WARNING: setGT remapping failed for pileup VCF; keeping ARTIC consensus unchanged." >&2
-      fi
-    else
-      echo "WARNING: pileup-based VCF generation failed; keeping ARTIC consensus unchanged." >&2
-    fi
+    bcftools mpileup -f "__REF__" -a FORMAT/AD,FORMAT/DP -Ou "$IUPAC_BAM" | \
+      bcftools call -mv -Oz -o "$PILEUP_VCF" || true
+    [ -s "$PILEUP_VCF" ] && tabix -f -p vcf "$PILEUP_VCF" || true
+
+    samtools mpileup -aa -A -d 0 -Q 0 -f "__REF__" "$IUPAC_BAM" > "$PILEUP_TXT"
+    python3 - "$PRECONS" "$PILEUP_TXT" "$AMBIG_MIN" "$AMBIG_MAX" "49" "__METAID__.consensus.fasta" "$IUPAC_REPORT" <<'PY'
+import re
+import sys
+from collections import Counter
+
+fasta_path, pileup_path, min_af_s, max_af_s, min_depth_s, out_path, report_path = sys.argv[1:]
+min_af = float(min_af_s)
+max_af = float(max_af_s)
+min_depth = int(min_depth_s)
+
+iupac = {
+    frozenset(["A", "G"]): "R",
+    frozenset(["C", "T"]): "Y",
+    frozenset(["G", "C"]): "S",
+    frozenset(["A", "T"]): "W",
+    frozenset(["G", "T"]): "K",
+    frozenset(["A", "C"]): "M",
+    frozenset(["C", "G", "T"]): "B",
+    frozenset(["A", "G", "T"]): "D",
+    frozenset(["A", "C", "T"]): "H",
+    frozenset(["A", "C", "G"]): "V",
+}
+
+def read_fasta(path):
+    header = None
+    seq_parts = []
+    with open(path) as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith(">"):
+                if header is None:
+                    header = line
+                continue
+            seq_parts.append(line.upper())
+    if header is None:
+        raise RuntimeError(f"No FASTA header in {path}")
+    return header, list("".join(seq_parts))
+
+def clean_bases(bases):
+    out = []
+    i = 0
+    n = len(bases)
+    while i < n:
+        c = bases[i]
+        if c == "^":
+            i += 2
+            continue
+        if c == "$":
+            i += 1
+            continue
+        if c in "+-":
+            i += 1
+            j = i
+            while j < n and bases[j].isdigit():
+                j += 1
+            if j == i:
+                continue
+            indel_len = int(bases[i:j])
+            i = j + indel_len
+            continue
+        out.append(c)
+        i += 1
+    return out
+
+header, seq = read_fasta(fasta_path)
+changed = 0
+
+with open(pileup_path) as fh:
+    for line in fh:
+        cols = line.rstrip("\n").split("\t")
+        if len(cols) < 5:
+            continue
+        pos = int(cols[1])
+        ref = cols[2].upper()
+        depth = int(cols[3])
+        bases = cols[4]
+        if depth < min_depth:
+            continue
+        counts = Counter()
+        for b in clean_bases(bases):
+            if b in ".,":  # match reference
+                base = ref
+            else:
+                base = b.upper()
+            if base in ("A", "C", "G", "T"):
+                counts[base] += 1
+        total = sum(counts.values())
+        if total < min_depth:
+            continue
+        selected = sorted(
+            [b for b, c in counts.items() if min_af <= (c / total) <= max_af]
+        )
+        if len(selected) < 2:
+            continue
+        code = iupac.get(frozenset(selected))
+        if not code:
+            continue
+        idx = pos - 1
+        if 0 <= idx < len(seq):
+            if seq[idx] != code:
+                seq[idx] = code
+                changed += 1
+
+with open(out_path, "w") as out:
+    out.write(header + "\n")
+    s = "".join(seq)
+    for i in range(0, len(s), 80):
+        out.write(s[i:i+80] + "\n")
+
+print(f"IUPAC pileup remap changed_positions={changed}")
+with open(report_path, "w") as rep:
+    rep.write(f"status=success\n")
+    rep.write(f"changed_positions={changed}\n")
+    rep.write(f"min_af={min_af}\n")
+    rep.write(f"max_af={max_af}\n")
+    rep.write(f"min_depth={min_depth}\n")
+PY
   else
     echo "WARNING: Missing preconsensus/mask/primertrimmed-bam for IUPAC remapping; keeping ARTIC consensus unchanged." >&2
+    {
+      echo "status=missing_inputs"
+      echo "changed_positions=0"
+      echo "min_af=$AMBIG_MIN"
+      echo "max_af=$AMBIG_MAX"
+      echo "min_depth=49"
+    } > "$IUPAC_REPORT"
   fi
 else
   echo "WARNING: Invalid AF range for IUPAC remapping (min=$AMBIG_MIN max=$AMBIG_MAX); skipping." >&2
+  {
+    echo "status=invalid_af_range"
+    echo "changed_positions=0"
+    echo "min_af=$AMBIG_MIN"
+    echo "max_af=$AMBIG_MAX"
+    echo "min_depth=49"
+  } > "$IUPAC_REPORT"
 fi
 
 # Always publish an explicit IUPAC file (may match original if no ambiguous sites/AF fields)
