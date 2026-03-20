@@ -61,7 +61,7 @@ artic minion \
   --bed "$BED7" \
   --ref "__REF__" \
   --model-dir "$MODELDIR" \
-  --min-depth 49 \
+  --min-depth 19 \
   __MODELOPT__ \
   --read-file __GPFASTQ__ \
   __METAID__
