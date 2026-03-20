@@ -117,7 +117,13 @@ def build_primer_db(primer_bed: pathlib.Path, primer_fasta: pathlib.Path, primer
                 continue
             name = parts[3]
             pool = parts[4].strip() if len(parts) > 4 else ""
-            strand = parts[5].strip() if len(parts) > 5 else "+"
+            strand = parts[5].strip() if len(parts) > 5 else ""
+            if strand not in {"+", "-"}:
+                upper_name = name.upper()
+                if "_RIGHT" in upper_name:
+                    strand = "-"
+                else:
+                    strand = "+"
             seq_from_bed = parts[6].strip().upper() if len(parts) > 6 else ""
             sequence = seq_from_bed
             if not sequence:
