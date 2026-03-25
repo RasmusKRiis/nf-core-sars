@@ -381,10 +381,6 @@ def write_mismatch_matrix(
                 "Start": start,
                 "End": end,
                 "Strand": entry.get("strand", "+"),
-                "Located_Start": located_start,
-                "Located_End": located_end,
-                "Distance_From_Expected": distance_from_expected,
-                "Search_Mode": search_mode,
                 "Primer_Length": len(primer_seq),
                 "Mismatches": best_mismatch_count,
                 "Percent_Identity": f"{percent_identity:.2f}",
@@ -392,6 +388,10 @@ def write_mismatch_matrix(
                 "Primer_Sequence": primer_seq,
                 "Template_Sequence": best_segment,
                 "Alignment_Offset": best_offset,
+                "Located_Start": located_start,
+                "Located_End": located_end,
+                "Distance_From_Expected": distance_from_expected,
+                "Search_Mode": search_mode,
             }
         )
 
@@ -407,10 +407,6 @@ def write_mismatch_matrix(
         "Start",
         "End",
         "Strand",
-        "Located_Start",
-        "Located_End",
-        "Distance_From_Expected",
-        "Search_Mode",
         "Primer_Length",
         "Mismatches",
         "Percent_Identity",
@@ -418,6 +414,10 @@ def write_mismatch_matrix(
         "Primer_Sequence",
         "Template_Sequence",
         "Alignment_Offset",
+        "Located_Start",
+        "Located_End",
+        "Distance_From_Expected",
+        "Search_Mode",
     ]
     with output.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
