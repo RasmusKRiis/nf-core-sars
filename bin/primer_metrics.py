@@ -283,6 +283,7 @@ def write_mismatch_matrix(
     run_id: str = "Unknown",
     global_fallback_mismatches: int = 4,
     edge_buffer: int = 3,
+    global_min_distance_gain: int = 10,
 ) -> None:
     primer_db = load_primer_db(primer_db_path)
     consensus = load_consensus_sequence(consensus_fasta)
@@ -312,7 +313,7 @@ def write_mismatch_matrix(
         local_is_edge_hit = near_left_edge or near_right_edge
         needs_global_fallback = (
             local_mismatch_count >= max(0, global_fallback_mismatches)
-            or local_is_edge_hit
+            or (local_is_edge_hit and local_mismatch_count > 0)
         )
 
         best_mismatch_count = local_mismatch_count
@@ -348,7 +349,7 @@ def write_mismatch_matrix(
                 (global_mismatch_count < local_mismatch_count)
                 or (
                     global_mismatch_count == local_mismatch_count
-                    and global_distance < local_distance
+                    and (global_distance + max(0, global_min_distance_gain)) <= local_distance
                 )
             )
 
@@ -465,6 +466,12 @@ def parse_args() -> argparse.Namespace:
         default=3,
         help="Trigger global search when local best hit is close to the window edge.",
     )
+    mismatch.add_argument(
+        "--global-min-distance-gain",
+        type=int,
+        default=10,
+        help="For tied mismatch counts, require this much distance improvement before switching to global.",
+    )
 
     return parser.parse_args()
 
@@ -489,6 +496,7 @@ def main():
             run_id=args.run_id,
             global_fallback_mismatches=args.global_fallback_mismatches,
             edge_buffer=args.edge_buffer,
+            global_min_distance_gain=args.global_min_distance_gain,
         )
         print(f"[primer-mismatch] Wrote mismatch matrix to {args.output}")
 
