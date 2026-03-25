@@ -196,10 +196,18 @@ def reverse_complement(seq: str) -> str:
     return seq.upper().translate(comp)[::-1]
 
 
-def bases_match(a: str, b: str) -> bool:
-    a_set = AMBIGUITY_CODES.get(a.upper(), {a.upper()})
-    b_set = AMBIGUITY_CODES.get(b.upper(), {b.upper()})
-    return bool(a_set & b_set)
+def bases_match(primer_base: str, template_base: str) -> bool:
+    """
+    Compare primer and template bases with IUPAC support.
+    Unknown template bases should be penalized: treating template N as a match can
+    produce false "perfect" hits in low-quality/ambiguous regions.
+    """
+    t_base = template_base.upper()
+    if t_base == "N" or t_base == "-":
+        return False
+    p_set = AMBIGUITY_CODES.get(primer_base.upper(), {primer_base.upper()})
+    t_set = AMBIGUITY_CODES.get(t_base, {t_base})
+    return bool(p_set & t_set)
 
 
 def mismatch_metrics(primer_seq: str, template_seq: str) -> Tuple[int, List[int]]:
@@ -245,6 +253,27 @@ def find_best_alignment(primer_seq: str, window_seq: str) -> Tuple[int, List[int
     return best
 
 
+def alignment_coordinates(
+    offset: int,
+    primer_len: int,
+    strand: str,
+    window_start: int,
+    window_end: int,
+) -> Tuple[int, int]:
+    """
+    Convert an alignment offset (in the oriented search sequence) to 1-based
+    consensus coordinates on the original strand.
+    """
+    if strand == "-":
+        window_len = max(0, window_end - window_start)
+        start0 = window_start + (window_len - (offset + primer_len))
+        end0 = start0 + primer_len
+    else:
+        start0 = window_start + offset
+        end0 = start0 + primer_len
+    return start0 + 1, end0
+
+
 def write_mismatch_matrix(
     consensus_fasta: pathlib.Path,
     primer_db_path: pathlib.Path,
@@ -252,6 +281,8 @@ def write_mismatch_matrix(
     output: pathlib.Path,
     flank: int = 30,
     run_id: str = "Unknown",
+    global_fallback_mismatches: int = 4,
+    edge_buffer: int = 3,
 ) -> None:
     primer_db = load_primer_db(primer_db_path)
     consensus = load_consensus_sequence(consensus_fasta)
@@ -272,11 +303,70 @@ def write_mismatch_matrix(
         else:
             oriented_window = template_window
 
-        mismatch_count, mismatch_positions, best_offset, best_segment = find_best_alignment(
+        local_mismatch_count, local_mismatch_positions, local_best_offset, local_best_segment = find_best_alignment(
             primer_seq, oriented_window
         )
+        local_max_offset = max(0, len(oriented_window) - len(primer_seq))
+        near_left_edge = local_best_offset <= edge_buffer
+        near_right_edge = local_best_offset >= max(0, local_max_offset - edge_buffer)
+        local_is_edge_hit = near_left_edge or near_right_edge
+        needs_global_fallback = (
+            local_mismatch_count >= max(0, global_fallback_mismatches)
+            or local_is_edge_hit
+        )
+
+        best_mismatch_count = local_mismatch_count
+        best_mismatch_positions = local_mismatch_positions
+        best_offset = local_best_offset
+        best_segment = local_best_segment
+        best_window_start = window_start
+        best_window_end = window_end
+        search_mode = "local"
+
+        if needs_global_fallback:
+            if entry.get("strand", "+") == "-":
+                oriented_global = reverse_complement(consensus)
+            else:
+                oriented_global = consensus
+            (
+                global_mismatch_count,
+                global_mismatch_positions,
+                global_best_offset,
+                global_best_segment,
+            ) = find_best_alignment(primer_seq, oriented_global)
+
+            local_loc_start, _ = alignment_coordinates(
+                local_best_offset, len(primer_seq), entry.get("strand", "+"), window_start, window_end
+            )
+            global_loc_start, _ = alignment_coordinates(
+                global_best_offset, len(primer_seq), entry.get("strand", "+"), 0, len(consensus)
+            )
+            local_distance = abs(local_loc_start - start)
+            global_distance = abs(global_loc_start - start)
+
+            choose_global = (
+                (global_mismatch_count < local_mismatch_count)
+                or (
+                    global_mismatch_count == local_mismatch_count
+                    and global_distance < local_distance
+                )
+            )
+
+            if choose_global:
+                best_mismatch_count = global_mismatch_count
+                best_mismatch_positions = global_mismatch_positions
+                best_offset = global_best_offset
+                best_segment = global_best_segment
+                best_window_start = 0
+                best_window_end = len(consensus)
+                search_mode = "global_fallback"
+
+        located_start, located_end = alignment_coordinates(
+            best_offset, len(primer_seq), entry.get("strand", "+"), best_window_start, best_window_end
+        )
+        distance_from_expected = abs(located_start - start)
         percent_identity = (
-            ((len(primer_seq) - mismatch_count) / len(primer_seq)) * 100 if primer_seq else 0.0
+            ((len(primer_seq) - best_mismatch_count) / len(primer_seq)) * 100 if primer_seq else 0.0
         )
 
         rows.append(
@@ -291,10 +381,14 @@ def write_mismatch_matrix(
                 "Start": start,
                 "End": end,
                 "Strand": entry.get("strand", "+"),
+                "Located_Start": located_start,
+                "Located_End": located_end,
+                "Distance_From_Expected": distance_from_expected,
+                "Search_Mode": search_mode,
                 "Primer_Length": len(primer_seq),
-                "Mismatches": mismatch_count,
+                "Mismatches": best_mismatch_count,
                 "Percent_Identity": f"{percent_identity:.2f}",
-                "Mismatch_Positions": ";".join(map(str, mismatch_positions)),
+                "Mismatch_Positions": ";".join(map(str, best_mismatch_positions)),
                 "Primer_Sequence": primer_seq,
                 "Template_Sequence": best_segment,
                 "Alignment_Offset": best_offset,
@@ -313,6 +407,10 @@ def write_mismatch_matrix(
         "Start",
         "End",
         "Strand",
+        "Located_Start",
+        "Located_End",
+        "Distance_From_Expected",
+        "Search_Mode",
         "Primer_Length",
         "Mismatches",
         "Percent_Identity",
@@ -355,6 +453,18 @@ def parse_args() -> argparse.Namespace:
         default="Unknown",
         help="Run identifier to embed into the mismatch output.",
     )
+    mismatch.add_argument(
+        "--global-fallback-mismatches",
+        type=int,
+        default=4,
+        help="Trigger global search when local mismatch count is greater than or equal to this threshold.",
+    )
+    mismatch.add_argument(
+        "--edge-buffer",
+        type=int,
+        default=3,
+        help="Trigger global search when local best hit is close to the window edge.",
+    )
 
     return parser.parse_args()
 
@@ -377,6 +487,8 @@ def main():
             pathlib.Path(args.output),
             flank=args.flank,
             run_id=args.run_id,
+            global_fallback_mismatches=args.global_fallback_mismatches,
+            edge_buffer=args.edge_buffer,
         )
         print(f"[primer-mismatch] Wrote mismatch matrix to {args.output}")
 
