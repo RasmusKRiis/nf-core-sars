@@ -221,6 +221,15 @@ def mismatch_metrics(primer_seq: str, template_seq: str) -> Tuple[int, List[int]
     return len(mismatches), mismatches
 
 
+def count_unknown_mismatches(template_seq: str, mismatch_positions: List[int]) -> int:
+    unknown = 0
+    for pos in mismatch_positions:
+        idx = pos - 1
+        if 0 <= idx < len(template_seq) and template_seq[idx].upper() in {"N", "-"}:
+            unknown += 1
+    return unknown
+
+
 def load_primer_db(path: pathlib.Path) -> Dict:
     with path.open("r") as handle:
         return json.load(handle)
@@ -284,6 +293,7 @@ def write_mismatch_matrix(
     global_fallback_mismatches: int = 4,
     edge_buffer: int = 3,
     global_min_distance_gain: int = 10,
+    global_far_distance_bp: int = 30,
 ) -> None:
     primer_db = load_primer_db(primer_db_path)
     consensus = load_consensus_sequence(consensus_fasta)
@@ -307,6 +317,7 @@ def write_mismatch_matrix(
         local_mismatch_count, local_mismatch_positions, local_best_offset, local_best_segment = find_best_alignment(
             primer_seq, oriented_window
         )
+        local_unknown_mismatches = count_unknown_mismatches(local_best_segment, local_mismatch_positions)
         local_max_offset = max(0, len(oriented_window) - len(primer_seq))
         near_left_edge = local_best_offset <= edge_buffer
         near_right_edge = local_best_offset >= max(0, local_max_offset - edge_buffer)
@@ -345,8 +356,11 @@ def write_mismatch_matrix(
             local_distance = abs(local_loc_start - start)
             global_distance = abs(global_loc_start - start)
 
+            far_global = global_distance > (local_distance + max(0, global_far_distance_bp))
+            far_distance_penalty = (1 + local_unknown_mismatches) if far_global else 0
+            required_mismatch_gain = 1 + far_distance_penalty
             choose_global = (
-                (global_mismatch_count < local_mismatch_count)
+                (global_mismatch_count + required_mismatch_gain <= local_mismatch_count)
                 or (
                     global_mismatch_count == local_mismatch_count
                     and (global_distance + max(0, global_min_distance_gain)) <= local_distance
@@ -365,6 +379,8 @@ def write_mismatch_matrix(
         located_start, located_end = alignment_coordinates(
             best_offset, len(primer_seq), entry.get("strand", "+"), best_window_start, best_window_end
         )
+        if "N" in best_segment.upper():
+            continue
         distance_from_expected = abs(located_start - start)
         percent_identity = (
             ((len(primer_seq) - best_mismatch_count) / len(primer_seq)) * 100 if primer_seq else 0.0
@@ -472,6 +488,12 @@ def parse_args() -> argparse.Namespace:
         default=10,
         help="For tied mismatch counts, require this much distance improvement before switching to global.",
     )
+    mismatch.add_argument(
+        "--global-far-distance-bp",
+        type=int,
+        default=30,
+        help="Treat global hit as far when it is this many bases farther from expected than local.",
+    )
 
     return parser.parse_args()
 
@@ -497,6 +519,7 @@ def main():
             global_fallback_mismatches=args.global_fallback_mismatches,
             edge_buffer=args.edge_buffer,
             global_min_distance_gain=args.global_min_distance_gain,
+            global_far_distance_bp=args.global_far_distance_bp,
         )
         print(f"[primer-mismatch] Wrote mismatch matrix to {args.output}")
 
