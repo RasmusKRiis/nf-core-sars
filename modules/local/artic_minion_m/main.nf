@@ -27,6 +27,7 @@ process ARTIC_MINION_M {
   def MODELOPT = (params.artic_model ? "--model ${params.artic_model}" : "").trim()
   def AMBIGMIN = params.artic_iupac_min_af.toString()
   def AMBIGMAX = params.artic_iupac_max_af.toString()
+  def MINDEPTH = params.min_depth.toString()
 
   def cmd = '''
 set -euo pipefail
@@ -61,7 +62,7 @@ artic minion \
   --bed "$BED7" \
   --ref "__REF__" \
   --model-dir "$MODELDIR" \
-  --min-depth 10 \
+  --min-depth __MINDEPTH__ \
   __MODELOPT__ \
   --read-file __GPFASTQ__ \
   __METAID__
@@ -346,6 +347,7 @@ grep -m1 '^>' "__METAID__.consensus.fasta" || true
     .replace('__NORMALISE__', params.artic_normalise.toString())
     .replace('__AMBIGMIN__', AMBIGMIN)
     .replace('__AMBIGMAX__', AMBIGMAX)
+    .replace('__MINDEPTH__', MINDEPTH)
     .replace('__MODELOPT__', MODELOPT)
 
   return cmd
