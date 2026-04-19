@@ -1,0 +1,39 @@
+name: primer_mask
+description: Merge low-coverage intervals with primer coordinates to create the final mask BED
+keywords:
+  - bedtools
+  - primer
+  - mask
+  - bed
+tools:
+  - bedtools:
+      description: A powerful toolset for genome arithmetic.
+      homepage: https://bedtools.readthedocs.io/
+      documentation: https://bedtools.readthedocs.io/
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - lowcov_bed:
+      type: file
+      description: BED file containing low-coverage intervals.
+  - primer_bed:
+      type: file
+      description: BED file containing primer coordinates.
+  - mask_primer_ends:
+      type: boolean
+      description: Flag indicating whether primer-end masking is enabled.
+output:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - primer_mask:
+      type: file
+      description: BED mask combining low-coverage intervals and primer coordinates.
+      pattern: "*.mask.bed"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

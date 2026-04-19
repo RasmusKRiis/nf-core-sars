@@ -1,0 +1,35 @@
+nextflow_process {
+
+    name "Test Process CSV_CONVERSION"
+    script "../main.nf"
+    process "CSV_CONVERSION"
+
+    tag "modules"
+    tag "modules_local"
+    tag "csv_conversion"
+
+    test("convert raw nextclade csv into pipeline reports") {
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id: 'sample1' ],
+                    file(params.local_test_data + '/module_test_nextclade_raw.csv', checkIfExists: true)
+                ]
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.nextclade_stats[0][1]).getName() == 'sample1_nextclade_stats.csv' },
+                { assert file(process.out.nextclade_mutations[0][1]).getName() == 'sample1_nextclade_mutations.csv' },
+                { assert path(process.out.nextclade_stats[0][1]).text.contains('Sample') },
+                { assert path(process.out.nextclade_mutations[0][1]).text.contains('S_aaSubstitutions') },
+                { assert path(process.out.versions.get(0)).text.contains('python') }
+            )
+        }
+    }
+}

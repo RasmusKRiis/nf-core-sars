@@ -1,0 +1,48 @@
+name: csv_conversion
+description: Convert raw Nextclade CSV output into per-sample stats and mutation summary tables
+keywords:
+  - nextclade
+  - csv
+  - mutations
+  - qc
+tools:
+  - csv_conversion_nextclade:
+      description: |
+        Custom nf-core/sars helper script that reformats Nextclade CSV output
+        into pipeline-specific stats and mutation reports.
+      homepage: https://github.com/nf-core/sars
+      documentation: https://github.com/nf-core/sars
+      licence: ["MIT"]
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - csv:
+      type: file
+      description: Raw Nextclade CSV file.
+output:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - nextclade_stats:
+      type: file
+      description: Processed per-sample Nextclade stats CSV.
+      pattern: "*nextclade_stats.csv"
+  - nextclade_mutations:
+      type: file
+      description: Processed per-sample Nextclade mutations CSV.
+      pattern: "*nextclade_mutations.csv"
+  - nextclade_stats_report:
+      type: file
+      description: Stats CSV emitted for downstream report collection.
+      pattern: "*nextclade_stats.csv"
+  - nextclade_mutations_report:
+      type: file
+      description: Mutation CSV emitted for downstream report collection.
+      pattern: "*nextclade_mutations.csv"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

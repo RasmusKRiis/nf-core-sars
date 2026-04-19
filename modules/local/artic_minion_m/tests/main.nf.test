@@ -1,0 +1,38 @@
+nextflow_process {
+
+    name "Test Process ARTIC_MINION_M"
+    script "../main.nf"
+    process "ARTIC_MINION_M"
+
+    tag "modules"
+    tag "modules_local"
+    tag "artic_minion_m"
+
+    test("stub artic minion outputs") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id: 'sample1' ],
+                    file(params.local_test_data + '/module_test_reads.fastq', checkIfExists: true)
+                ]
+                input[1] = file(params.local_test_data + '/module_test_scheme.bed', checkIfExists: true)
+                input[2] = file(params.local_test_data + '/module_test_reference.fasta', checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.artic_consensus[0][1]).getName() == 'sample1.consensus.fasta' },
+                { assert file(process.out.artic_bam[0][1]).getName() == 'sample1.primertrimmed.rg.sorted.bam' },
+                { assert file(process.out.artic_bam[0][2]).getName() == 'sample1.primertrimmed.rg.sorted.bam.bai' },
+                { assert path(process.out.versions.get(0)).text.contains('stub') }
+            )
+        }
+    }
+}

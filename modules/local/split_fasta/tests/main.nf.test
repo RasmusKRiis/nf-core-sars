@@ -1,0 +1,34 @@
+nextflow_process {
+
+    name "Test Process SPLIT_FASTA"
+    script "../main.nf"
+    process "SPLIT_FASTA"
+
+    tag "modules"
+    tag "modules_local"
+    tag "split_fasta"
+
+    test("split multifasta into per-record files") {
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id: 'batch1' ],
+                    file(params.local_test_data + '/module_test_multifasta.fasta', checkIfExists: true)
+                ]
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert process.out.split_fastas[0][0].id == 'batch1' },
+                { assert process.out.split_fastas[0][1].size() == 3 },
+                { assert process.out.split_fastas[0][1].collect { file(it).getName() }.sort() == ['alpha.fasta', 'beta.fasta', 'beta_2.fasta'] },
+                { assert path(process.out.versions.get(0)).text.contains("python") }
+            )
+        }
+    }
+}

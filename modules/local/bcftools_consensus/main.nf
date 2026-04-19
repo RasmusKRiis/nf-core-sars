@@ -11,6 +11,7 @@ process BCFTOOLS_CONSENSUS {
     tuple val(meta), path("${meta.id}.consensus.fasta"), path("${meta.id}.consensus.report.txt")
     tuple val(meta), path("${meta.id}.consensus.fasta"), emit: bcft_consensus
     path("${meta.id}.consensus.fasta"), emit: bcft_report_consensus
+    path("versions.yml"), emit: versions
 
   script:
   """
@@ -27,5 +28,29 @@ process BCFTOOLS_CONSENSUS {
   fi
 
   printf "sample\\t${meta.id}\\nvcf\\t${vcf}\\nmask\\t${mask_bed}\\n" > ${meta.id}.consensus.report.txt
+
+  cat <<-END_VERSIONS > versions.yml
+  "${task.process}":
+      bcftools: $(bcftools --version 2>&1 | head -n 1 | sed 's/^bcftools //')
+  END_VERSIONS
+  """
+
+  stub:
+  """
+  cat <<EOF > ${meta.id}.consensus.fasta
+  >${meta.id}
+  ACGTAC
+  EOF
+
+  cat <<EOF > ${meta.id}.consensus.report.txt
+  sample	${meta.id}
+  vcf	stub
+  mask	stub
+  EOF
+
+  cat <<-END_VERSIONS > versions.yml
+  "${task.process}":
+      bcftools: "stub"
+  END_VERSIONS
   """
 }

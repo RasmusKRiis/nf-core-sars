@@ -1,0 +1,35 @@
+nextflow_process {
+
+    name "Test Process IRMA"
+    script "../main.nf"
+    process "IRMA"
+
+    tag "modules"
+    tag "modules_local"
+    tag "irma"
+
+    test("stub irma outputs") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id: 'sample1' ],
+                    file(params.local_test_data + '/module_test_reads.fastq', checkIfExists: true)
+                ]
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.amended_consensus[0][1]).getName() == 'sample1.fa' },
+                { assert file(process.out.vcf[0][1]).getName() == 'sample1.vcf' },
+                { assert path(process.out.versions.get(0)).text.contains('stub') }
+            )
+        }
+    }
+}

@@ -1,0 +1,33 @@
+name: artic_guppyplex
+description: Run ARTIC guppyplex to length-filter Nanopore reads
+keywords:
+  - artic
+  - nanopore
+  - fastq
+  - amplicon
+tools:
+  - artic:
+      description: ARTIC field bioinformatics toolkit.
+      homepage: https://artic.readthedocs.io/
+      documentation: https://artic.readthedocs.io/
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - reads:
+      type: file
+      description: One or more FASTQ files for a sample.
+output:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - gp_fastq:
+      type: file
+      description: GUPPYplex filtered FASTQ file.
+      pattern: "*_guppyplex.fastq"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

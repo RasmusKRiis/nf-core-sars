@@ -1,0 +1,37 @@
+name: report_fasta
+description: Merge FASTA-workflow CSV summaries into a final run-level report
+keywords:
+  - report
+  - csv
+  - summary
+  - fasta
+tools:
+  - report_fasta:
+      description: Custom nf-core/sars reporting helper scripts for FASTA-only workflows.
+      homepage: https://github.com/nf-core/sars
+      documentation: https://github.com/nf-core/sars
+      licence: ["MIT"]
+input:
+  - nextclade_stats:
+      type: file
+      description: One or more processed Nextclade stats CSV files.
+  - nextclade_mutations:
+      type: file
+      description: One or more processed Nextclade mutation CSV files.
+  - resistance_mutations:
+      type: file
+      description: One or more resistance summary CSV files.
+  - runid:
+      type: string
+      description: Run identifier for the final report.
+output:
+  - report:
+      type: file
+      description: Final run-level CSV report.
+      pattern: "*.csv"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

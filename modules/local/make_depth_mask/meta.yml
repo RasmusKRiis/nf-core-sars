@@ -1,0 +1,44 @@
+name: make_depth_mask
+description: Convert BAM depth into a low-coverage BED mask
+keywords:
+  - samtools
+  - bedtools
+  - depth
+  - bed
+  - mask
+tools:
+  - samtools:
+      description: Tools for manipulating alignments in the SAM/BAM format.
+      homepage: https://www.htslib.org/
+      documentation: https://www.htslib.org/doc/samtools.html
+  - bedtools:
+      description: A powerful toolset for genome arithmetic.
+      homepage: https://bedtools.readthedocs.io/
+      documentation: https://bedtools.readthedocs.io/
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - bam:
+      type: file
+      description: Input BAM alignment file.
+  - bai:
+      type: file
+      description: Index for the BAM alignment.
+  - min_depth:
+      type: integer
+      description: Minimum depth threshold used to define low-coverage sites.
+output:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - lowcov:
+      type: file
+      description: BED file containing merged low-coverage intervals.
+      pattern: "*.lowcov.bed"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

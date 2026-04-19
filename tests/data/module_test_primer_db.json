@@ -1,0 +1,40 @@
+{
+  "primer_set": "test_scheme",
+  "primer_bed": "module_test_scheme.bed",
+  "primer_fasta": "module_test_primers.fasta",
+  "primers": {
+    "Test_1_LEFT": {
+      "name": "Test_1_LEFT",
+      "sequence": "ACGTAC",
+      "chrom": "MN908947.3",
+      "start": 1,
+      "end": 6,
+      "strand": "+",
+      "pool": "pool1",
+      "amplicon": "Test_1",
+      "length": 6
+    },
+    "Test_1_RIGHT": {
+      "name": "Test_1_RIGHT",
+      "sequence": "TTGGCC",
+      "chrom": "MN908947.3",
+      "start": 7,
+      "end": 12,
+      "strand": "-",
+      "pool": "pool1",
+      "amplicon": "Test_1",
+      "length": 6
+    }
+  },
+  "amplicons": {
+    "Test_1": {
+      "chrom": "MN908947.3",
+      "start": 1,
+      "end": 12,
+      "pools": [
+        "pool1"
+      ],
+      "length": 12
+    }
+  }
+}

@@ -1,0 +1,33 @@
+nextflow_process {
+
+    name "Test Process BUILD_PRIMER_DB"
+    script "../main.nf"
+    process "BUILD_PRIMER_DB"
+
+    tag "modules"
+    tag "modules_local"
+    tag "build_primer_db"
+
+    test("build primer db from local fixture") {
+
+        when {
+            process {
+                """
+                input[0] = file(params.local_test_data + '/module_test_scheme.bed', checkIfExists: true)
+                input[1] = file(params.local_test_data + '/module_test_primers.fasta', checkIfExists: true)
+                input[2] = "test_scheme"
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.primer_db[0]).getName() == "test_scheme.primer_db.json" },
+                { assert path(process.out.primer_db[0]).text.contains('"primer_set": "test_scheme"') },
+                { assert path(process.out.primer_db[0]).text.contains('"Test_1_LEFT"') },
+                { assert path(process.out.versions.get(0)).text.contains("python") }
+            )
+        }
+    }
+}

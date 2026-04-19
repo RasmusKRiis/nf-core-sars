@@ -1,0 +1,35 @@
+nextflow_process {
+
+    name "Test Process MK_MASK_NO_PRIMER"
+    script "../main.nf"
+    process "MK_MASK_NO_PRIMER"
+
+    tag "modules"
+    tag "modules_local"
+    tag "mk_mask_no_primer"
+
+    test("stub no-primer mask output") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id: 'sample1' ],
+                    file(params.local_test_data + '/module_test_lowcov.bed', checkIfExists: true)
+                ]
+                input[1] = false
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.no_primer_mask[0][1]).getName() == 'sample1.mask.bed' },
+                { assert path(process.out.versions.get(0)).text.contains('stub') }
+            )
+        }
+    }
+}

@@ -26,6 +26,7 @@ process IRMA {
     tuple val(meta), path("$meta.id/amended_consensus/${meta.id}.fa") , emit: amended_consensus
     path("$meta.id/amended_consensus/${meta.id}.fa") , emit: amended_consensus_report
     tuple val(meta), path("$meta.id/secondary") , emit: secondary
+    path("versions.yml"), emit: versions
   
 
     when:
@@ -33,6 +34,51 @@ process IRMA {
 
     script:
     """
+    set -euo pipefail
+
     IRMA CoV-minion-long-reads --external-config /project-bin/SARS-CoV-2-WGS-Nanopore.sh $fastq ${meta.id}
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        irma: $(IRMA --version 2>&1 | head -n 1 || echo "unknown")
+    END_VERSIONS
+    """
+
+    stub:
+    """
+    mkdir -p ${meta.id}/tables ${meta.id}/figures ${meta.id}/amended_consensus ${meta.id}/secondary
+
+    cat <<EOF > ${meta.id}/${meta.id}.fasta
+    >${meta.id}
+    ACGTAC
+    EOF
+
+    touch ${meta.id}/${meta.id}.bam
+    touch ${meta.id}/${meta.id}.bai
+
+    cat <<EOF > ${meta.id}/${meta.id}.vcf
+    ##fileformat=VCFv4.2
+    #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+    MN908947.3	1	.	A	G	.	PASS	.
+    EOF
+
+    cat <<EOF > ${meta.id}/tables/READ_COUNTS.txt
+    sample	count
+    ${meta.id}	1
+    EOF
+
+    touch ${meta.id}/figures/${meta.id}.pdf
+
+    cat <<EOF > ${meta.id}/amended_consensus/${meta.id}.fa
+    >${meta.id}
+    ACGTAC
+    EOF
+
+    touch ${meta.id}/secondary/.keep
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        irma: "stub"
+    END_VERSIONS
     """
 }

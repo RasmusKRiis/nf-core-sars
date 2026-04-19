@@ -1,0 +1,35 @@
+name: mk_mask_no_primer
+description: Forward the low-coverage BED as the final mask when primer-end masking is disabled
+keywords:
+  - bed
+  - mask
+  - qc
+tools:
+  - bash:
+      description: GNU Bourne Again Shell used for simple file operations.
+      homepage: https://www.gnu.org/software/bash/
+      documentation: https://www.gnu.org/software/bash/manual/
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - lowcov_bed:
+      type: file
+      description: BED file containing low-coverage intervals.
+  - mask_primer_ends:
+      type: boolean
+      description: Flag indicating whether primer-end masking is enabled.
+output:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - no_primer_mask:
+      type: file
+      description: BED mask copied from the low-coverage intervals.
+      pattern: "*.mask.bed"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

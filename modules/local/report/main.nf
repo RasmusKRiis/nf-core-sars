@@ -19,6 +19,7 @@ process REPORT {
     output:
     path("${runid}.csv"), emit: report
     path("${runid}.fasta"), emit: report_fasta
+    path("versions.yml"), emit: versions
 
 
 
@@ -28,6 +29,8 @@ process REPORT {
 
     script:
     """ 
+    set -euo pipefail
+
     # Generate date
     current_date=\$(date '+%Y-%m-%d')
 
@@ -63,6 +66,29 @@ process REPORT {
 
     # Make Multiple FASTA file for all samples
     cat ${fasta} > ${runid}.fasta
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        python: \$(python3 --version 2>&1 | sed 's/Python //')
+    END_VERSIONS
+    """
+
+    stub:
+    """
+    cat <<EOF > ${runid}.csv
+    Sample,RunID,Release Version
+    sample1,${runid},${release_version}
+    EOF
+
+    cat <<EOF > ${runid}.fasta
+    >sample1
+    ACGT
+    EOF
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        python: "stub"
+    END_VERSIONS
     
     """
 

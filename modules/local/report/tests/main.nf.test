@@ -1,0 +1,40 @@
+nextflow_process {
+
+    name "Test Process REPORT"
+    script "../main.nf"
+    process "REPORT"
+
+    tag "modules"
+    tag "modules_local"
+    tag "report"
+
+    test("stub report outputs") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = file(params.local_test_data + '/module_test_report_stats.csv', checkIfExists: true)
+                input[1] = file(params.local_test_data + '/module_test_report_mutations.csv', checkIfExists: true)
+                input[2] = file(params.local_test_data + '/module_test_report_resistance.csv', checkIfExists: true)
+                input[3] = "RUN001"
+                input[4] = "dev"
+                input[5] = "GridION"
+                input[6] = file(params.local_test_data + '/module_test_samplesheet.csv', checkIfExists: true)
+                input[7] = "test_scheme"
+                input[8] = file(params.local_test_data + '/module_test_consensus.fasta', checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.report[0]).getName() == 'RUN001.csv' },
+                { assert file(process.out.report_fasta[0]).getName() == 'RUN001.fasta' },
+                { assert path(process.out.versions.get(0)).text.contains('stub') }
+            )
+        }
+    }
+}

@@ -1,0 +1,33 @@
+name: chopper
+description: Filter Oxford Nanopore reads by quality using chopper
+keywords:
+  - nanopore
+  - fastq
+  - filtering
+  - qc
+tools:
+  - chopper:
+      description: Filter long-read FASTQ data by read quality.
+      homepage: https://github.com/wdecoster/chopper
+      documentation: https://github.com/wdecoster/chopper
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - fastq:
+      type: file
+      description: FASTQ file to filter.
+output:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - chopperfastq:
+      type: file
+      description: Filtered FASTQ file.
+      pattern: "*_filtered.fastq"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

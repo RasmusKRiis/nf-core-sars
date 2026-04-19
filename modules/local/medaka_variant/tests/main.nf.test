@@ -1,0 +1,38 @@
+nextflow_process {
+
+    name "Test Process MEDAKA_VARIANT"
+    script "../main.nf"
+    process "MEDAKA_VARIANT"
+
+    tag "modules"
+    tag "modules_local"
+    tag "medaka_variant"
+
+    test("stub medaka variant output") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id: 'sample1' ],
+                    file(params.local_test_data + '/module_test_dummy.bam', checkIfExists: true),
+                    file(params.local_test_data + '/module_test_dummy.bam.bai', checkIfExists: true)
+                ]
+                input[1] = file(params.local_test_data + '/module_test_reference.fasta', checkIfExists: true)
+                input[2] = "r1041_e82_400bps_hac_variant_v4.2.0"
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.medaka_var[0][1]).getName() == 'sample1.vcf.gz' },
+                { assert file(process.out.medaka_var[0][2]).getName() == 'sample1.vcf.gz.tbi' },
+                { assert path(process.out.versions.get(0)).text.contains('stub') }
+            )
+        }
+    }
+}

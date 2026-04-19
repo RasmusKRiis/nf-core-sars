@@ -1,0 +1,36 @@
+name: ampligone
+description: Remove primer sequences from amplicon reads with Ampligone
+keywords:
+  - ampligone
+  - primers
+  - nanopore
+  - fastq
+tools:
+  - ampligone:
+      description: Amplicon primer trimming for long-read data.
+      homepage: https://github.com/rki-mf1/ampligone
+      documentation: https://github.com/rki-mf1/ampligone
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - fastq:
+      type: file
+      description: Input FASTQ file for a single sample.
+  - primerdir:
+      type: directory
+      description: Directory containing the reference FASTA and primer FASTA files.
+output:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - primertrimmedfastq:
+      type: file
+      description: FASTQ file with primer sequences removed.
+      pattern: "*_primer_cleaned.fastq"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

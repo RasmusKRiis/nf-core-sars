@@ -1,0 +1,36 @@
+nextflow_process {
+
+    name "Test Process NEXTCLADE"
+    script "../main.nf"
+    process "NEXTCLADE"
+
+    tag "modules"
+    tag "modules_local"
+    tag "nextclade"
+
+    test("stub nextclade csv output") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id: 'test' ],
+                    file(params.local_test_data + '/module_test_consensus.fasta', checkIfExists: true)
+                ]
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert process.out.nextclade_csv[0][0].id == 'test' },
+                { assert file(process.out.nextclade_csv[0][1]).getName() == "test_nextclade.csv" },
+                { assert path(process.out.nextclade_csv[0][1]).text.contains("seqName") },
+                { assert path(process.out.versions.get(0)).text.contains("nextclade") }
+            )
+        }
+    }
+}

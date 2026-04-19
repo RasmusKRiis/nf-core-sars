@@ -1,0 +1,36 @@
+name: split_fasta
+description: Split a multi-record FASTA into one FASTA file per sequence record
+keywords:
+  - fasta
+  - splitting
+  - consensus
+  - preprocessing
+tools:
+  - python:
+      description: |
+        Python helper logic bundled with nf-core/sars for splitting multi-record
+        FASTA files into per-record files with sanitised names.
+      homepage: https://www.python.org/
+      documentation: https://docs.python.org/3/
+      licence: ["PSF-2.0"]
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - fasta:
+      type: file
+      description: Multi-record FASTA file to split.
+output:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - split_fastas:
+      type: file
+      description: Per-record FASTA files written into a split directory.
+      pattern: "split/*.fasta"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

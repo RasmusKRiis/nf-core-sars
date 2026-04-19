@@ -1,0 +1,38 @@
+nextflow_process {
+
+    name "Test Process ARTIC_GUPPYPLEX"
+    script "../main.nf"
+    process "ARTIC_GUPPYPLEX"
+
+    tag "modules"
+    tag "modules_local"
+    tag "artic_guppyplex"
+
+    test("stub guppyplex output") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id: 'sample1' ],
+                    [
+                        file(params.local_test_data + '/module_test_reads.fastq', checkIfExists: true),
+                        file(params.local_test_data + '/module_test_reads_2.fastq', checkIfExists: true)
+                    ]
+                ]
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.gp_fastq[0][1]).getName() == 'sample1_guppyplex.fastq' },
+                { assert path(process.out.gp_fastq[0][1]).text.contains('@sample1') },
+                { assert path(process.out.versions.get(0)).text.contains('stub') }
+            )
+        }
+    }
+}

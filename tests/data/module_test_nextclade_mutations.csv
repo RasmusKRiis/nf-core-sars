@@ -1,0 +1,2 @@
+Sample,coverage,cdsCoverage,S_aaSubstitutions,ORF1a_aaSubstitutions,ORF1b_aaSubstitutions,S_aaDeletions,ORF1a_aaDeletions,ORF1b_aaDeletions,S_aaInsertions,ORF1a_aaInsertions,ORF1b_aaInsertions
+sample1,99,S:1;ORF1a:1;ORF1b:1,N501Y,P3395H,P314L,No mutation,No mutation,No mutation,No mutation,No mutation,No mutation

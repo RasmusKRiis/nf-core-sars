@@ -1,0 +1,37 @@
+nextflow_process {
+
+    name "Test Process BCFTOOLS_CONSENSUS"
+    script "../main.nf"
+    process "BCFTOOLS_CONSENSUS"
+
+    tag "modules"
+    tag "modules_local"
+    tag "bcftools_consensus"
+
+    test("stub bcftools consensus output") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id: 'sample1' ],
+                    file(params.local_test_data + '/module_test_variants.vcf', checkIfExists: true),
+                    file(params.local_test_data + '/module_test_lowcov.bed', checkIfExists: true)
+                ]
+                input[1] = file(params.local_test_data + '/module_test_reference.fasta', checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.bcft_consensus[0][1]).getName() == 'sample1.consensus.fasta' },
+                { assert file(process.out.bcft_report_consensus[0]).getName() == 'sample1.consensus.fasta' },
+                { assert path(process.out.versions.get(0)).text.contains('stub') }
+            )
+        }
+    }
+}

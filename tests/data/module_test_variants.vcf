@@ -1,0 +1,4 @@
+##fileformat=VCFv4.2
+##contig=<ID=MN908947.3,length=29903>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+MN908947.3	1	.	A	G	.	PASS	.

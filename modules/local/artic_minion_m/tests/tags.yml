@@ -1,0 +1,2 @@
+artic_minion_m:
+  - modules/local/artic_minion_m/**

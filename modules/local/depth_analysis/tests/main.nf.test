@@ -1,0 +1,38 @@
+nextflow_process {
+
+    name "Test Process DEPTH_ANALYSIS"
+    script "../main.nf"
+    process "DEPTH_ANALYSIS"
+
+    tag "modules"
+    tag "modules_local"
+    tag "depth_analysis"
+
+    test("stub depth analysis report") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id: 'test' ],
+                    file(params.local_test_data + '/module_test_dummy.bam', checkIfExists: true),
+                    file(params.local_test_data + '/module_test_dummy.bam.bai', checkIfExists: true)
+                ]
+                input[1] = file(params.local_test_data + '/module_test_scheme.bed', checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert process.out.depth_report[0][0].id == 'test' },
+                { assert file(process.out.depth_report[0][1]).getName() == "test_depth_by_position.csv" },
+                { assert path(process.out.depth_report[0][1]).text.contains("Depth") },
+                { assert path(process.out.versions.get(0)).text.contains("stub") }
+            )
+        }
+    }
+}

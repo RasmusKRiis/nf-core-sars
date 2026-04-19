@@ -1,0 +1,2 @@
+mk_mask_no_primer:
+  - modules/local/mk_mask_no_primer/**

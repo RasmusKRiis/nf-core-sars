@@ -1,0 +1,37 @@
+name: build_primer_db
+description: Build a JSON primer database from a primer BED file and primer FASTA
+keywords:
+  - primers
+  - amplicon
+  - bed
+  - fasta
+  - json
+tools:
+  - primer_metrics:
+      description: |
+        Custom nf-core/sars helper utility used to build a primer database and
+        compute per-primer mismatch metrics.
+      homepage: https://github.com/nf-core/sars
+      documentation: https://github.com/nf-core/sars
+      licence: ["MIT"]
+input:
+  - primer_bed:
+      type: file
+      description: Primer BED file describing primer coordinates.
+  - primer_fasta:
+      type: file
+      description: FASTA file containing primer sequences.
+  - primer_set_name:
+      type: string
+      description: Name to assign to the generated primer scheme.
+output:
+  - primer_db:
+      type: file
+      description: JSON primer database generated from the scheme BED and FASTA.
+      pattern: "*.primer_db.json"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

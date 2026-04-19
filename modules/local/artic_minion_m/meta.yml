@@ -1,0 +1,68 @@
+name: artic_minion_m
+description: Run ARTIC minion to generate consensus, VCF, and BAM outputs for Nanopore amplicon data
+keywords:
+  - artic
+  - consensus
+  - nanopore
+  - vcf
+  - bam
+tools:
+  - artic:
+      description: ARTIC field bioinformatics toolkit.
+      homepage: https://artic.readthedocs.io/
+      documentation: https://artic.readthedocs.io/
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - gp_fastq:
+      type: file
+      description: Length-filtered FASTQ file from ARTIC guppyplex.
+  - bed:
+      type: file
+      description: Primer BED file.
+  - ref:
+      type: file
+      description: Reference FASTA file.
+output:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - artic_consensus:
+      type: file
+      description: Primary consensus FASTA file.
+      pattern: "*.consensus.fasta"
+  - artic_consensus_report:
+      type: file
+      description: Consensus FASTA emitted for downstream report aggregation.
+      pattern: "*.consensus.fasta"
+  - artic_consensus_iupac:
+      type: file
+      description: IUPAC ambiguity consensus FASTA.
+      pattern: "*.consensus.iupac.fasta"
+  - artic_consensus_original:
+      type: file
+      description: Unmodified ARTIC consensus FASTA.
+      pattern: "*.consensus.artic-original.fasta"
+  - artic_consensus_iupac_report:
+      type: file
+      description: Report describing IUPAC ambiguity remapping.
+      pattern: "*.consensus.iupac.report.txt"
+  - artic_normalised_vcf:
+      type: file
+      description: Normalised VCF and index.
+      pattern: "*.normalised.vcf.gz"
+  - artic_iupac_vcf:
+      type: file
+      description: IUPAC-adjusted VCF and index.
+      pattern: "*.normalised.iupac-af.vcf.gz"
+  - artic_bam:
+      type: file
+      description: Primer-trimmed sorted BAM and index.
+      pattern: "*.primertrimmed.rg.sorted.bam"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

@@ -1,0 +1,37 @@
+name: nextclade
+description: Run Nextclade on consensus FASTA sequences and collect the CSV output
+keywords:
+  - consensus
+  - fasta
+  - clade
+  - lineage
+  - qc
+tools:
+  - nextclade:
+      description: |
+        Nextclade assigns clades and lineages, reports mutations, and provides
+        quality control metrics for viral consensus sequences.
+      homepage: https://clades.nextstrain.org/
+      documentation: https://docs.nextstrain.org/projects/nextclade/en/stable/
+      licence: ["MIT"]
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - fasta:
+      type: file
+      description: Consensus FASTA sequence for one sample.
+output:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - nextclade_csv:
+      type: file
+      description: CSV output from Nextclade.
+      pattern: "*_nextclade.csv"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

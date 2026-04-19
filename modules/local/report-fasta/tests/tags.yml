@@ -1,0 +1,2 @@
+report_fasta:
+  - modules/local/report-fasta/**

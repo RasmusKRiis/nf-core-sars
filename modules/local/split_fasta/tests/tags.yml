@@ -1,0 +1,2 @@
+split_fasta:
+  - modules/local/split_fasta/**

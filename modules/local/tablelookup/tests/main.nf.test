@@ -1,0 +1,37 @@
+nextflow_process {
+
+    name "Test Process TABLELOOKUP"
+    script "../main.nf"
+    process "TABLELOOKUP"
+
+    tag "modules"
+    tag "modules_local"
+    tag "tablelookup"
+
+    test("annotate resistance mutations from processed mutation csv") {
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id: 'sample1' ],
+                    file(params.local_test_data + '/module_test_nextclade_mutations.csv', checkIfExists: true)
+                ]
+                input[1] = file(params.local_test_data + '/module_test_spike.csv', checkIfExists: true)
+                input[2] = file(params.local_test_data + '/module_test_rdrp.csv', checkIfExists: true)
+                input[3] = file(params.local_test_data + '/module_test_clpro.csv', checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.resistance_mutations[0][1]).getName() == 'sample1_resistance_mutations.csv' },
+                { assert path(process.out.resistance_mutations[0][1]).text.contains('Spike_mAbs_inhibitors') },
+                { assert path(process.out.resistance_mutations[0][1]).text.contains('N501Y') },
+                { assert path(process.out.versions.get(0)).text.contains('python') }
+            )
+        }
+    }
+}

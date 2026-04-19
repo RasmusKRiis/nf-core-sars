@@ -1,0 +1,41 @@
+name: minimap2_align
+description: Align Nanopore reads to the reference genome with minimap2 and samtools
+keywords:
+  - minimap2
+  - samtools
+  - alignment
+  - nanopore
+  - bam
+tools:
+  - minimap2:
+      description: Pairwise alignment for nucleotide sequences.
+      homepage: https://github.com/lh3/minimap2
+      documentation: https://github.com/lh3/minimap2
+  - samtools:
+      description: Tools for manipulating alignments in the SAM/BAM format.
+      homepage: https://www.htslib.org/
+      documentation: https://www.htslib.org/doc/samtools.html
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - reads:
+      type: file
+      description: One or more input FASTQ files.
+  - reference:
+      type: file
+      description: Reference FASTA file.
+output:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - minimap2:
+      type: file
+      description: Sorted BAM file and index produced from the alignment.
+      pattern: "*.bam"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

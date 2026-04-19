@@ -45,4 +45,17 @@ process NEXTCLADE {
         nextclade: \$(nextclade --version 2>&1 | sed -E 's/^[^0-9]*([0-9].*)$/\\1/')
     END_VERSIONS
     """
+
+    stub:
+    """
+    cat <<EOF > ${meta.id}_nextclade.csv
+    seqName;coverage;cdsCoverage;aaSubstitutions;aaDeletions;aaInsertions;clade;Nextclade_pango;partiallyAliased;clade_nextstrain;clade_who;qc.mixedSites.totalMixedSites;qc.overallStatus;frameShifts
+    ${meta.id};0.99;S:1,ORF1a:1,ORF1b:1;S:N501Y;No mutation;No mutation;test;BA.1;BA.1;20A;Omicron;0;good;0
+    EOF
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        nextclade: "stub"
+    END_VERSIONS
+    """
 }

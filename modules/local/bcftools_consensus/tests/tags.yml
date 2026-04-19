@@ -1,0 +1,2 @@
+bcftools_consensus:
+  - modules/local/bcftools_consensus/**

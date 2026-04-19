@@ -1,0 +1,49 @@
+name: tablelookup
+description: Map Nextclade mutation summaries to antiviral resistance annotation tables
+keywords:
+  - resistance
+  - mutations
+  - annotation
+  - nextclade
+tools:
+  - lookup_mutations:
+      description: |
+        Custom nf-core/sars helper script that maps processed Nextclade mutations
+        to curated antiviral resistance tables.
+      homepage: https://github.com/nf-core/sars
+      documentation: https://github.com/nf-core/sars
+      licence: ["MIT"]
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - csv:
+      type: file
+      description: Processed Nextclade mutations CSV.
+  - spike:
+      type: file
+      description: Spike resistance lookup table.
+  - rdrp:
+      type: file
+      description: RdRp resistance lookup table.
+  - clpro:
+      type: file
+      description: 3CLpro resistance lookup table.
+output:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - resistance_mutations:
+      type: file
+      description: Annotated resistance summary CSV.
+      pattern: "*_resistance_mutations.csv"
+  - resistance_mutations_report:
+      type: file
+      description: Resistance summary CSV emitted for downstream report collection.
+      pattern: "*_resistance_mutations.csv"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

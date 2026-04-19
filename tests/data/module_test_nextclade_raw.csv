@@ -1,0 +1,2 @@
+seqName;clade;Nextclade_pango;partiallyAliased;clade_nextstrain;clade_who;qc.mixedSites.totalMixedSites;coverage;qc.overallStatus;frameShifts;aaSubstitutions;aaDeletions;aaInsertions;cdsCoverage
+sample1;21K;BA.1;BA.1;21K (Omicron);Omicron;0;0.99;good;No frameShifts;S:N501Y,ORF1a:P3395H,ORF1b:P314L;No mutation;No mutation;S:1,ORF1a:1,ORF1b:1

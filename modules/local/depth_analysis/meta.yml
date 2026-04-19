@@ -1,0 +1,42 @@
+name: depth_analysis
+description: Compute per-position depth metrics from a BAM file using a primer BED file
+keywords:
+  - depth
+  - bam
+  - coverage
+  - amplicon
+tools:
+  - depth_analysis:
+      description: |
+        Custom nf-core/sars helper script that summarises depth per position
+        across amplicon sequencing alignments.
+      homepage: https://github.com/nf-core/sars
+      documentation: https://github.com/nf-core/sars
+      licence: ["MIT"]
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - bam:
+      type: file
+      description: Coordinate-sorted BAM file.
+  - bai:
+      type: file
+      description: BAM index file.
+  - primer_bed:
+      type: file
+      description: Primer BED file used to annotate depth positions.
+output:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - depth_report:
+      type: file
+      description: CSV report containing per-position depth information.
+      pattern: "*_depth_by_position.csv"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"

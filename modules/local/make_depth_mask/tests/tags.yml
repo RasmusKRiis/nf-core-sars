@@ -1,0 +1,2 @@
+make_depth_mask:
+  - modules/local/make_depth_mask/**

@@ -15,9 +15,12 @@ process MEDAKA_VARIANT {
         path("${meta.id}.vcf.gz"),
         path("${meta.id}.vcf.gz.tbi"),
         emit: medaka_var
+  path("versions.yml"), emit: versions
 
   script:
   """
+  set -euo pipefail
+
   samtools fastq ${bam} > ${meta.id}.tmp.fq
 
   medaka_variant \
@@ -32,5 +35,23 @@ process MEDAKA_VARIANT {
   tabix -p vcf ${meta.id}.vcf.gz
 
   rm -f ${meta.id}.tmp.fq
+
+  cat <<-END_VERSIONS > versions.yml
+  "${task.process}":
+      medaka_variant: $(medaka_variant --version 2>&1 | head -n 1)
+      samtools: $(samtools --version 2>&1 | head -n 1 | sed 's/^samtools //')
+  END_VERSIONS
+  """
+
+  stub:
+  """
+  touch ${meta.id}.vcf.gz
+  touch ${meta.id}.vcf.gz.tbi
+
+  cat <<-END_VERSIONS > versions.yml
+  "${task.process}":
+      medaka_variant: "stub"
+      samtools: "stub"
+  END_VERSIONS
   """
 }

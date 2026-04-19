@@ -22,6 +22,7 @@ process ARTIC_MINION_M {
           path("${meta.id}.primertrimmed.rg.sorted.bam"),
           path("${meta.id}.primertrimmed.rg.sorted.bam.bai"),
           emit: artic_bam
+    path("versions.yml"), emit: versions
 
   script:
   def MODELOPT = (params.artic_model ? "--model ${params.artic_model}" : "").trim()
@@ -336,6 +337,12 @@ fi
 
 echo "Final header:"
 grep -m1 '^>' "__METAID__.consensus.fasta" || true
+
+cat <<-END_VERSIONS > versions.yml
+"${task.process}":
+    artic: $(artic --version 2>&1 | head -n 1)
+    samtools: $(samtools --version 2>&1 | head -n 1 | sed 's/^samtools //')
+END_VERSIONS
 '''
 
   cmd = cmd
@@ -351,4 +358,40 @@ grep -m1 '^>' "__METAID__.consensus.fasta" || true
     .replace('__MODELOPT__', MODELOPT)
 
   return cmd
+
+  stub:
+  """
+  cat <<EOF > ${meta.id}.consensus.fasta
+  >${meta.id}
+  ACGTAC
+  EOF
+
+  cat <<EOF > ${meta.id}.consensus.iupac.fasta
+  >${meta.id}
+  ACGTAC
+  EOF
+
+  cat <<EOF > ${meta.id}.consensus.artic-original.fasta
+  >${meta.id}
+  ACGTAC
+  EOF
+
+  cat <<EOF > ${meta.id}.consensus.iupac.report.txt
+  status=success
+  changed_positions=0
+  EOF
+
+  touch ${meta.id}.normalised.vcf.gz
+  touch ${meta.id}.normalised.vcf.gz.tbi
+  touch ${meta.id}.normalised.iupac-af.vcf.gz
+  touch ${meta.id}.normalised.iupac-af.vcf.gz.tbi
+  touch ${meta.id}.primertrimmed.rg.sorted.bam
+  touch ${meta.id}.primertrimmed.rg.sorted.bam.bai
+
+  cat <<-END_VERSIONS > versions.yml
+  "${task.process}":
+      artic: "stub"
+      samtools: "stub"
+  END_VERSIONS
+  """
 }

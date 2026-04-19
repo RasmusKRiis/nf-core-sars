@@ -1,0 +1,35 @@
+nextflow_process {
+
+    name "Test Process AMPLIGONE"
+    script "../main.nf"
+    process "AMPLIGONE"
+
+    tag "modules"
+    tag "modules_local"
+    tag "ampligone"
+
+    test("stub ampligone output") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id: 'sample1' ],
+                    file(params.local_test_data + '/module_test_reads.fastq', checkIfExists: true)
+                ]
+                input[1] = file(params.local_test_data + '/module_test_primerdir', checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.primertrimmedfastq[0][1]).getName() == 'sample1_primer_cleaned.fastq' },
+                { assert path(process.out.versions.get(0)).text.contains('stub') }
+            )
+        }
+    }
+}

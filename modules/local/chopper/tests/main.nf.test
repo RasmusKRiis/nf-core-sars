@@ -1,0 +1,35 @@
+nextflow_process {
+
+    name "Test Process CHOPPER"
+    script "../main.nf"
+    process "CHOPPER"
+
+    tag "modules"
+    tag "modules_local"
+    tag "chopper"
+
+    test("stub filtered fastq output") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id: 'sample1' ],
+                    file(params.local_test_data + '/module_test_reads.fastq', checkIfExists: true)
+                ]
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.chopperfastq[0][1]).getName() == 'sample1_filtered.fastq' },
+                { assert path(process.out.chopperfastq[0][1]).text.contains('@sample1') },
+                { assert path(process.out.versions.get(0)).text.contains('stub') }
+            )
+        }
+    }
+}

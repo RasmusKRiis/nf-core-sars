@@ -1,0 +1,37 @@
+nextflow_process {
+
+    name "Test Process PRIMER_MISMATCH"
+    script "../main.nf"
+    process "PRIMER_MISMATCH"
+
+    tag "modules"
+    tag "modules_local"
+    tag "primer_mismatch"
+
+    test("primer mismatch matrix from local fixture") {
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id: 'sample1' ],
+                    file(params.local_test_data + '/module_test_consensus.fasta', checkIfExists: true)
+                ]
+                input[1] = file(params.local_test_data + '/module_test_primer_db.json', checkIfExists: true)
+                input[2] = "RUN001"
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert process.out.primer_mismatches[0][0].id == 'sample1' },
+                { assert file(process.out.primer_mismatches[0][1]).getName() == "sample1_primer_mismatches.csv" },
+                { assert path(process.out.primer_mismatches[0][1]).text.contains("Primer_Name") },
+                { assert path(process.out.primer_mismatches[0][1]).text.contains("RUN001") },
+                { assert path(process.out.versions.get(0)).text.contains("python") }
+            )
+        }
+    }
+}

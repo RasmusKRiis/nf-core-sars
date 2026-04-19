@@ -1,0 +1,43 @@
+name: primer_mismatch
+description: Compute per-primer mismatch metrics for a consensus FASTA using a primer database
+keywords:
+  - primers
+  - mismatches
+  - consensus
+  - amplicon
+  - qc
+tools:
+  - primer_metrics:
+      description: |
+        Custom nf-core/sars helper utility used to build a primer database and
+        compute per-primer mismatch metrics.
+      homepage: https://github.com/nf-core/sars
+      documentation: https://github.com/nf-core/sars
+      licence: ["MIT"]
+input:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - consensus:
+      type: file
+      description: Consensus FASTA for one sample.
+  - primer_db:
+      type: file
+      description: JSON primer database generated from the corresponding scheme.
+  - run_id:
+      type: string
+      description: Run identifier to embed in the output CSV.
+output:
+  - meta:
+      type: map
+      description: Groovy map containing sample information.
+  - primer_mismatches:
+      type: file
+      description: CSV report of per-primer mismatch statistics.
+      pattern: "*_primer_mismatches.csv"
+  - versions:
+      type: file
+      description: File containing software versions.
+      pattern: "versions.yml"
+authors:
+  - "@RasmusKRiis"
