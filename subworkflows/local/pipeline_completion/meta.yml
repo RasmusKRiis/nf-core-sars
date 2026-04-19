@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "PIPELINE_COMPLETION"
+description: Register pipeline completion hooks, summaries, and notifications for nf-core/sars
+keywords:
+  - utility
+  - completion
+  - notifications
+  - reporting
+components:
+  - completionemail
+  - completionsummary
+  - imnotification
+input:
+  - email:
+      type: string
+      description: Email address to receive pipeline summaries.
+  - email_on_fail:
+      type: string
+      description: Email address to receive failure notifications only.
+  - plaintext_email:
+      type: boolean
+      description: Send plaintext email instead of HTML.
+  - outdir:
+      type: directory
+      description: Output directory for the pipeline run.
+  - monochrome_logs:
+      type: boolean
+      description: Disable ANSI colors in terminal summaries.
+  - hook_url:
+      type: string
+      description: Messaging webhook URL for run notifications.
+  - multiqc_report:
+      type: object
+      description: Optional MultiQC report path or channel value used in completion email generation.
+output:
+  - dummy_emit:
+      type: boolean
+      description: Dummy output to satisfy nf-core subworkflow metadata requirements.
+  - versions:
+      type: object
+      description: Empty placeholder channel for compatibility with nf-core helper subworkflow patterns.
+authors:
+  - "@RasmusKRiis"

@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "PIPELINE_INITIALISATION"
+description: Validate parameters, print pipeline help, and perform nf-core startup checks for nf-core/sars
+keywords:
+  - utility
+  - validation
+  - startup
+  - schema
+components:
+  - utils_nfschema_plugin
+  - utils_nfcore_pipeline
+  - utils_nextflow_pipeline
+input:
+  - version:
+      type: boolean
+      description: Display version information and exit.
+  - validate_params:
+      type: boolean
+      description: Validate parameters against the pipeline schema.
+  - monochrome_logs:
+      type: boolean
+      description: Disable ANSI colors in console logging.
+  - nextflow_cli_args:
+      type: list
+      description: Raw positional CLI arguments passed to the pipeline.
+  - outdir:
+      type: directory
+      description: Output directory for pipeline artefacts.
+  - input:
+      type: string
+      description: Optional samplesheet input path for the selected workflow mode.
+  - help:
+      type: boolean
+      description: Show standard help output.
+  - help_full:
+      type: boolean
+      description: Show extended help output including hidden parameters.
+  - show_hidden:
+      type: boolean
+      description: Show hidden parameters in the rendered help output.
+output:
+  - versions:
+      type: object
+      description: Empty placeholder channel for compatibility with nf-core startup patterns.
+authors:
+  - "@RasmusKRiis"

@@ -9,10 +9,6 @@
 */
 
 include { UTILS_NFSCHEMA_PLUGIN } from '../../nf-core/utils_nfschema_plugin'
-include { paramsSummaryMap } from 'plugin/nf-schema'
-include { completionEmail } from '../../nf-core/utils_nfcore_pipeline'
-include { completionSummary } from '../../nf-core/utils_nfcore_pipeline'
-include { imNotification } from '../../nf-core/utils_nfcore_pipeline'
 include { UTILS_NFCORE_PIPELINE } from '../../nf-core/utils_nfcore_pipeline'
 include { UTILS_NEXTFLOW_PIPELINE } from '../../nf-core/utils_nextflow_pipeline'
 
@@ -76,59 +72,12 @@ workflow PIPELINE_INITIALISATION {
         command
     )
 
-    UTILS_NFCORE_PIPELINE(
-        nextflow_cli_args
-    )
+    UTILS_NFCORE_PIPELINE(nextflow_cli_args)
 
     validateInputParameters()
 
     emit:
     versions = ch_versions
-}
-
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    SUBWORKFLOW FOR PIPELINE COMPLETION
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-
-workflow PIPELINE_COMPLETION {
-
-    take:
-    email
-    email_on_fail
-    plaintext_email
-    outdir
-    monochrome_logs
-    hook_url
-    multiqc_report
-
-    main:
-    summary_params = paramsSummaryMap(workflow, parameters_schema: 'nextflow_schema.json')
-    def multiqc_reports = multiqc_report.toList()
-
-    workflow.onComplete {
-        if (email || email_on_fail) {
-            completionEmail(
-                summary_params,
-                email,
-                email_on_fail,
-                plaintext_email,
-                outdir,
-                monochrome_logs,
-                multiqc_reports.getVal(),
-            )
-        }
-
-        completionSummary(monochrome_logs)
-        if (hook_url) {
-            imNotification(summary_params, hook_url)
-        }
-    }
-
-    workflow.onError {
-        log.error 'Pipeline failed. Please refer to troubleshooting docs: https://nf-co.re/docs/usage/troubleshooting'
-    }
 }
 
 /*
@@ -159,15 +108,6 @@ def validateInputParameters() {
     }
 }
 
-def getGenomeAttribute(attribute) {
-    if (params.genomes && params.genome && params.genomes.containsKey(params.genome)) {
-        if (params.genomes[params.genome].containsKey(attribute)) {
-            return params.genomes[params.genome][attribute]
-        }
-    }
-    return null
-}
-
 def genomeExistsError() {
     if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
         def error_string = "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" +
@@ -177,51 +117,4 @@ def genomeExistsError() {
             "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
         error(error_string)
     }
-}
-
-def toolCitationText() {
-    [
-        'Tools used in the workflow included:',
-        'ARTIC,',
-        'FastQC (Andrews 2010),',
-        'IRMA (Shepard et al. 2016),',
-        'Medaka,',
-        'Nextclade (Aksamentov et al. 2021),',
-        'and MultiQC (Ewels et al. 2016).',
-    ].join(' ').trim()
-}
-
-def toolBibliographyText() {
-    [
-        '<li>Andrews S. FastQC: a quality control tool for high throughput sequence data (2010).</li>',
-        '<li>Shepard SS, et al. Viral deep sequencing needs an adaptive approach: IRMA, the iterative refinement meta-assembler. BMC Genomics. 2016;17:708.</li>',
-        '<li>Aksamentov I, et al. Nextclade: clade assignment, mutation calling and quality control for viral genomes. J Open Source Softw. 2021;6(67):3773.</li>',
-        '<li>Ewels P, Magnusson M, Lundin S, Kaller M. MultiQC: summarize analysis results for multiple tools and samples in a single report. Bioinformatics. 2016;32(19):3047-3048.</li>',
-    ].join(' ').trim()
-}
-
-def methodsDescriptionText(mqc_methods_yaml) {
-    def meta = [:]
-    meta.workflow = workflow.toMap()
-    meta['manifest_map'] = workflow.manifest.toMap()
-
-    if (meta.manifest_map.doi) {
-        def temp_doi_ref = ''
-        def manifest_doi = meta.manifest_map.doi.tokenize(',')
-        manifest_doi.each { doi_ref ->
-            temp_doi_ref += "(doi: <a href='https://doi.org/${doi_ref.replace('https://doi.org/', '').replace(' ', '')}'>${doi_ref.replace('https://doi.org/', '').replace(' ', '')}</a>), "
-        }
-        meta['doi_text'] = temp_doi_ref.substring(0, temp_doi_ref.length() - 2)
-    } else {
-        meta['doi_text'] = ''
-    }
-    meta['nodoi_text'] = meta.manifest_map.doi ? '' : '<li>If available, include the Zenodo DOI for the pipeline release used in the analysis.</li>'
-    meta['tool_citations'] = toolCitationText()
-    meta['tool_bibliography'] = toolBibliographyText()
-
-    def methods_text = mqc_methods_yaml.text
-    def engine = new groovy.text.SimpleTemplateEngine()
-    def description_html = engine.createTemplate(methods_text).make(meta)
-
-    return description_html.toString()
 }

@@ -1,87 +1,66 @@
 /*
-Primer-only workflow for SARS-CoV-2 consensus FASTA files.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This workflow ingests one or more multi-FASTA files, splits them so every
-sequence becomes its own task, builds the primer database for the provided
-scheme and runs the primer mismatch analysis only.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    IMPORT MODULES
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { PRIMER_MISMATCH } from '../modules/local/primer_mismatch/main'
 include { BUILD_PRIMER_DB } from '../modules/local/build_primer_db/main'
+include { PRIMER_MISMATCH } from '../modules/local/primer_mismatch/main'
+include { SPLIT_FASTA     } from '../modules/local/split_fasta/main'
 
-params.fasta         = params.fasta ?: null
-params.primer_bed    = params.primer_bed ?: null
-params.primer_fasta  = params.primer_fasta ?: null
-params.primer_set_name = params.primer_set_name ?: null
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    FUNCTIONS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
 
-def parsePrimerFasta(fastaGlob) {
+def parsePrimerFastaInputs(fastaPattern) {
     Channel
-        .fromPath(fastaGlob)
-        .ifEmpty { error "No FASTA files found with pattern: ${fastaGlob}" }
-        .map { file ->
-            def sampleId = file.getBaseName().replaceAll(/\.(fa|fasta|fna)$/,'')
-            def meta = [ id: sampleId ]
-            tuple(meta, file)
+        .fromPath(fastaPattern, checkIfExists: true)
+        .ifEmpty { error "No FASTA files found with pattern: ${fastaPattern}" }
+        .map { fasta ->
+            def sampleId = fasta.getBaseName().replaceAll(/\.(fa|fasta|fna)$/, '')
+            tuple([id: sampleId], fasta)
         }
 }
 
-process SPLIT_PRIMER_FASTA {
-    tag "${meta.id}"
-    label 'process_single'
-    publishDir "${params.outdir ?: 'results'}/split_fastas", mode: 'copy', optional: true
-
-    container 'quay.io/biocontainers/seqkit:2.8.1--h9ee0642_0'
-
-    input:
-        tuple val(meta), path(fasta)
-
-    output:
-        tuple val(meta), path("${meta.id}_*.fasta"), emit: split_fastas
-
-    script:
-    """
-    mkdir -p split && seqkit split2 --quiet -s 1 -O split "$fasta"
-    for f in split/*.fasta; do
-        base=\$(basename "\$f")
-        mv "\$f" "${meta.id}_\$base"
-    done
-    """
+def resolveRequiredFile(pathValue, label) {
+    if (!pathValue) {
+        error "${label} was not provided."
+    }
+    def resolved = file(pathValue)
+    if (!resolved.exists()) {
+        error "${label} not found: ${pathValue}"
+    }
+    return resolved
 }
+
+def toPathList(paths) {
+    paths instanceof List ? paths : [paths]
+}
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    WORKFLOW DEFINITION
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
 
 workflow SARSCOVSEQPRIMERCHECK {
 
     main:
+    def fastaPattern = params.fasta ?: error('Please provide --fasta pointing to the input multi-FASTA file(s).')
+    def primerBedFile = resolveRequiredFile(params.primer_bed, 'Primer BED file')
+    def primerFastaFile = resolveRequiredFile(params.primer_fasta, 'Primer FASTA file')
+    def primerSetName = params.primer_set_name ?: primerBedFile.getBaseName()
 
-    def fastaGlob = params.fasta ?: error("Please provide --fasta pointing to the multi-FASTA input file(s)")
-    def primerBedFile = params.primer_bed ? file(params.primer_bed) : error("Please provide --primer_bed for the primer scheme.")
-    if( !primerBedFile.exists() ) {
-        error "Primer BED file not found: ${primerBedFile}"
-    }
-    def primerFastaFile = params.primer_fasta ? file(params.primer_fasta) : error("Please provide --primer_fasta for the primer scheme.")
-    if( !primerFastaFile.exists() ) {
-        error "Primer FASTA file not found: ${primerFastaFile}"
-    }
-    def primerSetName = params.primer_set_name ?: primerBedFile.getBaseName().replaceAll(/\.bed$/,'')
+    ch_fasta_raw = parsePrimerFastaInputs(fastaPattern)
 
-    ch_fasta_raw = parsePrimerFasta(fastaGlob)
+    SPLIT_FASTA(ch_fasta_raw)
 
-    SPLIT_PRIMER_FASTA(ch_fasta_raw)
-
-    ch_single_seq = SPLIT_PRIMER_FASTA.out.split_fastas
-        .flatMap { meta, files ->
-            files.collect { f ->
-                def header = ""
-                f.withReader { reader ->
-                    header = reader.readLine() ?: ""
-                }
-                header = header.replaceFirst(/^>/, '')
-                if( !header ) {
-                    def prefix = meta.id ? "${meta.id}_" : ""
-                    header = f.getBaseName()
-                        .replaceFirst("^${prefix}", '')
-                        .replaceAll(/\.(fa|fasta|fna)$/,'')
-                }
-                tuple([ id: header ], f)
+    ch_single_seq = SPLIT_FASTA.out.split_fastas
+        .flatMap { meta, splitFastas ->
+            toPathList(splitFastas).collect { splitFasta ->
+                tuple([id: splitFasta.getBaseName()], splitFasta)
             }
         }
 
