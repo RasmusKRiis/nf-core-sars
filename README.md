@@ -1,133 +1,61 @@
-# sarsseq :high_brightness:
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/nf-core-sars_logo_dark.png">
+    <img alt="nf-core/sars" src="docs/images/nf-core-sars_logo_light.png">
+  </picture>
+</h1>
 
-[![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg)](https://www.nextflow.io/)
+[![GitHub Actions nf-test Status](https://github.com/RasmusKRiis/nf-core-sars/actions/workflows/nf-test.yml/badge.svg)](https://github.com/RasmusKRiis/nf-core-sars/actions/workflows/nf-test.yml)
+[![GitHub Actions Linting Status](https://github.com/RasmusKRiis/nf-core-sars/actions/workflows/linting.yml/badge.svg)](https://github.com/RasmusKRiis/nf-core-sars/actions/workflows/linting.yml)
+[![Nextflow](https://img.shields.io/badge/version-%E2%89%A523.04.0-green?style=flat&logo=nextflow&logoColor=white&color=%230DC09D&link=https%3A%2F%2Fnextflow.io)](https://www.nextflow.io/)
+[![nf-core template version](https://img.shields.io/badge/nf--core_template-3.5.2-green?style=flat&logo=nfcore&logoColor=white&color=%2324B064&link=https%3A%2F%2Fnf-co.re)](https://github.com/nf-core/tools/releases/tag/3.5.2)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
+[![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
+[![nf-test](https://img.shields.io/badge/unit_tests-nf--test-337ab7.svg)](https://www.nf-test.com)
 
 ## Introduction
 
-This pipeline processes FASTQ files from Nanopore sequencing of SARS-CoV-2, generating consensus sequences and analyzing them for mutations, sequencing statistics, and drug resistance effects. The main steps include:
+**nf-core/sars** is a SARS-CoV-2 analysis pipeline for Nanopore amplicon sequencing and downstream consensus review workflows. The repository currently contains three entry points:
 
-- Alignment and consensus sequencing with IRMA.
-- Consensus sequence analysis with Nextclade.
-- Mutation calling
-- Generation of a comprehensive report in CSV format.
-- Output of sequences in a multiple FASTA file.
+1. `fastq-workflow` for demultiplexed Nanopore FASTQ inputs, consensus generation, depth analysis, primer mismatch metrics, Nextclade summaries, and resistance annotation.
+2. `fasta-workflow` for FASTA-only Nextclade analysis and report generation.
+3. `primercheck-workflow` for primer mismatch QC on consensus FASTA files.
 
-The pipeline consist of four different worflows listed bellow:
-
-1) SARS-CoV-2 FASTQ analysis (human)
-  Alignment of FASTQ and mutation analysis 
-2) SARS-CoV-2 FASTA analysis (human-fasta) (under development)
-   Mutation analysis 
-
-## Compatibility
-
-- **Operating System**: Linux
-- **Dependencies**: Docker and Nextflow
+The pipeline produces consensus FASTA files, depth tables, primer QC outputs, mutation summaries, resistance annotations, and run-level reports.
 
 ## Usage
 
-### Sample Sheet Preparation
-
-Prepare a sample sheet (CSV or TSV*) in the `assets` folder with the following format:
-* TSV file is not not compulsory
-
-```
-PCR-PlatePosition,SequenceID,Barcode,KonsCt
-A1*,sampleID,barcodeID,ct-value*
-```
-*not compulsory
-
-Each row lists a sample to be analyzed. Samples not listed in the sheet will be excluded from the analysis.
-
-### Directory Structure
-
-#### For FASTQ-analysis
-Ensure your directory structure is as follows:
-
-```
-./
-  |-data
-         |-barcode3
-               |-XXXX_pass_barcode03_XXXX.fastq.gz
-               |-YYYY_pass_barcode03_YYYY.fastq.gz
-  |-nf-core-sars
-               |-assets
-                     |-samplesheet.csv
-                     |-samplesheet.tsv
-               |-...
-```
-
-### Running the Pipeline
-
-Navigate to the `nf-core-sars` folder and execute the following command with default parameters:
-
-#### SARS-CoV-2 FASTQ analysis
+The full usage guide is in [docs/usage.md](docs/usage.md). The minimal FASTQ workflow command is:
 
 ```bash
-nextflow run main.nf -profile docker --runid runid_name  --primerdir primer_folder  --input samplesheet.csv --outdir ../outdir_name
+nextflow run . \
+    -profile docker \
+    --file fastq-workflow \
+    --input assets/samplesheet.csv \
+    --samplesDir ../data \
+    --primerdir assets/primer_schemes/ncov-2019_midnight/v3.0.0 \
+    --outdir results
 ```
 
-### Important Parameters
-
-- `--input` (default: `assets/samplesheet.csv`): Path to the samplesheet.
-- `--samplesDir` (default: `../data`): Directory containing the FASTQ files in the structure given above.
-- `--primerdir` (default: `assets/V5.4.2/`): Directory containing the primers used during amplification of target region(s).
-- `--primer_bed` (optional): BED file describing the primer scheme used for ARTIC, depth analysis and primer QC. If omitted, the pipeline tries to resolve a `.scheme.bed` file from `--primerdir`.
-- `--reference` (optional): Reference FASTA for ARTIC consensus. If omitted, the pipeline tries to resolve a `*.reference.fasta` file from `--primerdir`.
-- `--primer_fasta` (optional): Explicit path to the FASTA file containing the primer sequences. If omitted, the pipeline tries to resolve `primers.fasta` relative to `--primerdir` or the BED file.
-- `--artic_iupac_min_af` (default: `0.30`): Lower AF bound for converting mixed SNP sites to IUPAC ambiguity codes in final ARTIC consensus.
-- `--artic_iupac_max_af` (default: `0.70`): Upper AF bound for converting mixed SNP sites to IUPAC ambiguity codes in final ARTIC consensus.
-- `--file primercheck-workflow`: Run the FASTA-only primer QC workflow.
-
-All parameters are detailed in the `nextflow.config` file.
+The FASTA-only and primer-check workflows are documented in [docs/usage.md](docs/usage.md) as well.
 
 ## Pipeline Output
 
-The output includes:
+The output guide is in [docs/output.md](docs/output.md). Typical result areas include:
 
-- Consensus sequences.
-- Depth-per-position CSV tables with amplicon annotations (`results/depth/*_depth_by_position.csv`).
-- A primer database JSON plus per-sample primer mismatch matrices suited for reporting (Power BI) in `results/primer_metrics/`.
-- Mutation calls.
-- Sequencing statistics (coverage, quality parameters).
-- Drug resistance effects.
-- A report in CSV format.
-- A multiple FASTA file of sequences that passed quality filters.
-
-## Primer-only workflow
-
-When you only need primer mismatch statistics for consensus FASTA files, launch the primer-only workflow:
-
-```bash
-nextflow run main.nf -profile docker \
-    --file primercheck-workflow \
-    --fasta /path/to/multi.fasta \
-    --primer_bed /path/to/primer.scheme.bed \
-    --primer_fasta /path/to/primers.fasta \
-    --primer_set_name VM.3 \
-    --runid VM3_PRIMER_Q1 \
-    --outdir ./primercheck-results
-```
-
-This splits each multi-FASTA into per-sequence files, builds the primer database for the provided scheme and writes primer mismatch CSVs to `primer_metrics/` inside `--outdir`.
-
-### SMB helper script
-
-The `wrapper-primercheck.sh` script downloads the requested FASTA/BED/primer FASTA from the N-drive (`//pos1-fhi-svm01.fhi.no/styrt`) via `smbclient` and runs the workflow:
-
-```bash
-./wrapper-primercheck.sh \
-    -f 2025-02-05_Export.fasta \
-    -b VM.3.scheme.bed \
-    -P VM.3.primers.fasta \
-    -n VM.3 \
-    -r VM3_Q1 \
-    -o /mnt/tempdata/primercheck-run
-```
-
-Store SMB credentials in `~/.smbcreds` (same format as other wrappers).
+- `pipeline_info/` for Nextflow execution metadata.
+- `depth/` for per-position coverage summaries.
+- `primer_metrics/` for primer mismatch metrics and generated primer databases.
+- `nextclade/` and report tables for lineage, mutation, and resistance summaries.
 
 ## Credits
 
-sarsseq was originally written by Rasmus Kopperud Riis.
+nf-core/sars was originally written by Rasmus Kopperud Riis.
+
+## Contributions and Support
+
+Please see [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md) for contribution guidance. For nf-core specific discussion, the canonical community channel is the [nf-core Slack `#sars` channel](https://nfcore.slack.com/channels/sars).
+
+## Citations
+
+Tool and framework citations are listed in [CITATIONS.md](CITATIONS.md).

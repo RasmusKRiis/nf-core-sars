@@ -4,15 +4,15 @@
   |\\ | |__  __ /  ` /  \\ |__) |__         }  {
   | \\| |       \\__, \\__/ |  \\ |___     \\`-._,-`-,
                                         `._,._,'
-  nf-core/sarscovseq ${version}
+  nf-core/sars ${version}
 ----------------------------------------------------
 Run Name: $runName
 
 <% if (success){
-    out << "## nf-core/sarscovseq execution completed successfully! ##"
+    out << "## nf-core/sars execution completed successfully! ##"
 } else {
     out << """####################################################
-## nf-core/sarscovseq execution completed unsuccessfully! ##
+## nf-core/sars execution completed unsuccessfully! ##
 ####################################################
 The exit status of the task that caused the workflow execution to fail was: $exitStatus.
 The full error message was:
@@ -35,5 +35,5 @@ Pipeline Configuration:
 <% out << summary.collect{ k,v -> " - $k: $v" }.join("\n") %>
 
 --
-nf-core/sarscovseq
-https://github.com/nf-core/sarscovseq
+nf-core/sars
+https://github.com/nf-core/sars

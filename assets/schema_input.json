@@ -1,33 +1,28 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com/nf-core/sarscovseq/master/assets/schema_input.json",
-    "title": "nf-core/sarscovseq pipeline - params.input schema",
-    "description": "Schema for the file provided with params.input",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/nf-core/sars/master/assets/schema_input.json",
+    "title": "nf-core/sars pipeline - params.input schema",
+    "description": "Schema for the FASTQ workflow samplesheet provided with params.input",
     "type": "array",
     "items": {
         "type": "object",
         "properties": {
-            "sample": {
+            "SequenceID": {
                 "type": "string",
                 "pattern": "^\\S+$",
-                "errorMessage": "Sample name must be provided and cannot contain spaces",
+                "errorMessage": "SequenceID must be provided and cannot contain spaces",
                 "meta": ["id"]
             },
-            "fastq_1": {
+            "Barcode": {
                 "type": "string",
-                "format": "file-path",
-                "exists": true,
-                "pattern": "^\\S+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 1 must be provided, cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+                "pattern": "^\\S+$",
+                "errorMessage": "Barcode must be provided and cannot contain spaces"
             },
-            "fastq_2": {
-                "type": "string",
-                "format": "file-path",
-                "exists": true,
-                "pattern": "^\\S+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+            "KonsCt": {
+                "type": ["string", "number", "null"],
+                "description": "Optional Ct value carried through the samplesheet metadata."
             }
         },
-        "required": ["sample", "fastq_1"]
+        "required": ["SequenceID", "Barcode"]
     }
 }

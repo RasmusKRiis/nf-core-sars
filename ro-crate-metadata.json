@@ -1,0 +1,328 @@
+{
+    "@context": [
+        "https://w3id.org/ro/crate/1.2/context",
+        {
+            "GithubService": "https://w3id.org/ro/terms/test#GithubService",
+            "JenkinsService": "https://w3id.org/ro/terms/test#JenkinsService",
+            "PlanemoEngine": "https://w3id.org/ro/terms/test#PlanemoEngine",
+            "TestDefinition": "https://w3id.org/ro/terms/test#TestDefinition",
+            "TestInstance": "https://w3id.org/ro/terms/test#TestInstance",
+            "TestService": "https://w3id.org/ro/terms/test#TestService",
+            "TestSuite": "https://w3id.org/ro/terms/test#TestSuite",
+            "TravisService": "https://w3id.org/ro/terms/test#TravisService",
+            "definition": "https://w3id.org/ro/terms/test#definition",
+            "engineVersion": "https://w3id.org/ro/terms/test#engineVersion",
+            "instance": "https://w3id.org/ro/terms/test#instance",
+            "resource": "https://w3id.org/ro/terms/test#resource",
+            "runsOn": "https://w3id.org/ro/terms/test#runsOn"
+        }
+    ],
+    "@graph": [
+        {
+            "@id": "./",
+            "@type": "Dataset",
+            "creativeWorkStatus": "InProgress",
+            "datePublished": "2026-04-19T09:37:54+00:00",
+            "description": "<h1>\n  <picture>\n    <source media=\"(prefers-color-scheme: dark)\" srcset=\"docs/images/nf-core-sars_logo_dark.png\">\n    <img alt=\"nf-core/sars\" src=\"docs/images/nf-core-sars_logo_light.png\">\n  </picture>\n</h1>\n\n[![GitHub Actions nf-test Status](https://github.com/RasmusKRiis/nf-core-sars/actions/workflows/nf-test.yml/badge.svg)](https://github.com/RasmusKRiis/nf-core-sars/actions/workflows/nf-test.yml)\n[![GitHub Actions Linting Status](https://github.com/RasmusKRiis/nf-core-sars/actions/workflows/linting.yml/badge.svg)](https://github.com/RasmusKRiis/nf-core-sars/actions/workflows/linting.yml)\n[![Nextflow](https://img.shields.io/badge/version-%E2%89%A523.04.0-green?style=flat&logo=nextflow&logoColor=white&color=%230DC09D&link=https%3A%2F%2Fnextflow.io)](https://www.nextflow.io/)\n[![nf-core template version](https://img.shields.io/badge/nf--core_template-3.5.2-green?style=flat&logo=nfcore&logoColor=white&color=%2324B064&link=https%3A%2F%2Fnf-co.re)](https://github.com/nf-core/tools/releases/tag/3.5.2)\n[![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)\n[![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)\n[![nf-test](https://img.shields.io/badge/unit_tests-nf--test-337ab7.svg)](https://www.nf-test.com)\n\n## Introduction\n\n**nf-core/sars** is a SARS-CoV-2 analysis pipeline for Nanopore amplicon sequencing and downstream consensus review workflows. The repository currently contains three entry points:\n\n1. `fastq-workflow` for demultiplexed Nanopore FASTQ inputs, consensus generation, depth analysis, primer mismatch metrics, Nextclade summaries, and resistance annotation.\n2. `fasta-workflow` for FASTA-only Nextclade analysis and report generation.\n3. `primercheck-workflow` for primer mismatch QC on consensus FASTA files.\n\nThe pipeline produces consensus FASTA files, depth tables, primer QC outputs, mutation summaries, resistance annotations, and run-level reports.\n\n## Usage\n\nThe full usage guide is in [docs/usage.md](docs/usage.md). The minimal FASTQ workflow command is:\n\n```bash\nnextflow run . \\\n    -profile docker \\\n    --file fastq-workflow \\\n    --input assets/samplesheet.csv \\\n    --samplesDir ../data \\\n    --primerdir assets/primer_schemes/ncov-2019_midnight/v3.0.0 \\\n    --outdir results\n```\n\nThe FASTA-only and primer-check workflows are documented in [docs/usage.md](docs/usage.md) as well.\n\n## Pipeline Output\n\nThe output guide is in [docs/output.md](docs/output.md). Typical result areas include:\n\n- `pipeline_info/` for Nextflow execution metadata.\n- `depth/` for per-position coverage summaries.\n- `primer_metrics/` for primer mismatch metrics and generated primer databases.\n- `nextclade/` and report tables for lineage, mutation, and resistance summaries.\n\n## Credits\n\nnf-core/sars was originally written by Rasmus Kopperud Riis.\n\n## Contributions and Support\n\nPlease see [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md) for contribution guidance. For nf-core specific discussion, the canonical community channel is the [nf-core Slack `#sars` channel](https://nfcore.slack.com/channels/sars).\n\n## Citations\n\nTool and framework citations are listed in [CITATIONS.md](CITATIONS.md).\n",
+            "hasPart": [
+                {
+                    "@id": "main.nf"
+                },
+                {
+                    "@id": "assets/"
+                },
+                {
+                    "@id": "bin/"
+                },
+                {
+                    "@id": "conf/"
+                },
+                {
+                    "@id": "docs/"
+                },
+                {
+                    "@id": "docs/images/"
+                },
+                {
+                    "@id": "modules/"
+                },
+                {
+                    "@id": "modules/local/"
+                },
+                {
+                    "@id": "modules/nf-core/"
+                },
+                {
+                    "@id": "workflows/"
+                },
+                {
+                    "@id": "subworkflows/"
+                },
+                {
+                    "@id": "nextflow.config"
+                },
+                {
+                    "@id": "README.md"
+                },
+                {
+                    "@id": "nextflow_schema.json"
+                },
+                {
+                    "@id": "CHANGELOG.md"
+                },
+                {
+                    "@id": "LICENSE"
+                },
+                {
+                    "@id": "CODE_OF_CONDUCT.md"
+                },
+                {
+                    "@id": "CITATIONS.md"
+                },
+                {
+                    "@id": "modules.json"
+                },
+                {
+                    "@id": "docs/usage.md"
+                },
+                {
+                    "@id": "docs/output.md"
+                },
+                {
+                    "@id": ".nf-core.yml"
+                },
+                {
+                    "@id": ".pre-commit-config.yaml"
+                },
+                {
+                    "@id": ".prettierignore"
+                }
+            ],
+            "isBasedOn": "https://github.com/nf-core/sars",
+            "license": "MIT",
+            "mainEntity": {
+                "@id": "main.nf"
+            },
+            "mentions": [
+                {
+                    "@id": "#e16aab1c-00bc-4584-bb8d-e82bc306233f"
+                }
+            ],
+            "name": "nf-core/sars"
+        },
+        {
+            "@id": "ro-crate-metadata.json",
+            "@type": "CreativeWork",
+            "about": {
+                "@id": "./"
+            },
+            "conformsTo": [
+                {
+                    "@id": "https://w3id.org/ro/crate/1.2"
+                },
+                {
+                    "@id": "https://w3id.org/workflowhub/workflow-ro-crate/1.0"
+                }
+            ]
+        },
+        {
+            "@id": "main.nf",
+            "@type": [
+                "File",
+                "SoftwareSourceCode",
+                "ComputationalWorkflow"
+            ],
+            "dateCreated": "",
+            "dateModified": "2026-04-19T11:37:54Z",
+            "dct:conformsTo": "https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE/",
+            "description": "SARS-CoV-2 Nanopore analysis pipeline with consensus assembly, QC, and mutation reporting",
+            "keywords": [
+                "nf-core",
+                "nextflow"
+            ],
+            "license": [
+                "MIT"
+            ],
+            "name": [
+                "nf-core/sars"
+            ],
+            "programmingLanguage": {
+                "@id": "https://w3id.org/workflowhub/workflow-ro-crate#nextflow"
+            },
+            "sdPublisher": {
+                "@id": "https://nf-co.re/"
+            },
+            "url": [
+                "https://github.com/nf-core/sars",
+                "https://nf-co.re/sars/dev/"
+            ],
+            "version": [
+                "1.0dev"
+            ]
+        },
+        {
+            "@id": "https://w3id.org/workflowhub/workflow-ro-crate#nextflow",
+            "@type": "ComputerLanguage",
+            "identifier": {
+                "@id": "https://www.nextflow.io/"
+            },
+            "name": "Nextflow",
+            "url": {
+                "@id": "https://www.nextflow.io/"
+            },
+            "version": "!>=23.04.0"
+        },
+        {
+            "@id": "#e16aab1c-00bc-4584-bb8d-e82bc306233f",
+            "@type": "TestSuite",
+            "instance": [
+                {
+                    "@id": "#750080f7-7795-41fd-85b4-38dfbb220101"
+                }
+            ],
+            "mainEntity": {
+                "@id": "main.nf"
+            },
+            "name": "Test suite for nf-core/sars"
+        },
+        {
+            "@id": "#750080f7-7795-41fd-85b4-38dfbb220101",
+            "@type": "TestInstance",
+            "name": "GitHub Actions workflow for testing nf-core/sars",
+            "resource": "repos/nf-core/sars/actions/workflows/nf-test.yml",
+            "runsOn": {
+                "@id": "https://w3id.org/ro/terms/test#GithubService"
+            },
+            "url": "https://api.github.com"
+        },
+        {
+            "@id": "https://w3id.org/ro/terms/test#GithubService",
+            "@type": "TestService",
+            "name": "Github Actions",
+            "url": {
+                "@id": "https://github.com"
+            }
+        },
+        {
+            "@id": "assets/",
+            "@type": "Dataset",
+            "description": "Additional files"
+        },
+        {
+            "@id": "bin/",
+            "@type": "Dataset",
+            "description": "Scripts that must be callable from a pipeline process"
+        },
+        {
+            "@id": "conf/",
+            "@type": "Dataset",
+            "description": "Configuration files"
+        },
+        {
+            "@id": "docs/",
+            "@type": "Dataset",
+            "description": "Markdown files for documenting the pipeline"
+        },
+        {
+            "@id": "docs/images/",
+            "@type": "Dataset",
+            "description": "Images for the documentation files"
+        },
+        {
+            "@id": "modules/",
+            "@type": "Dataset",
+            "description": "Modules used by the pipeline"
+        },
+        {
+            "@id": "modules/local/",
+            "@type": "Dataset",
+            "description": "Pipeline-specific modules"
+        },
+        {
+            "@id": "modules/nf-core/",
+            "@type": "Dataset",
+            "description": "nf-core modules"
+        },
+        {
+            "@id": "workflows/",
+            "@type": "Dataset",
+            "description": "Main pipeline workflows to be executed in main.nf"
+        },
+        {
+            "@id": "subworkflows/",
+            "@type": "Dataset",
+            "description": "Smaller subworkflows"
+        },
+        {
+            "@id": "nextflow.config",
+            "@type": "File",
+            "description": "Main Nextflow configuration file"
+        },
+        {
+            "@id": "README.md",
+            "@type": "File",
+            "description": "Basic pipeline usage information"
+        },
+        {
+            "@id": "nextflow_schema.json",
+            "@type": "File",
+            "description": "JSON schema for pipeline parameter specification"
+        },
+        {
+            "@id": "CHANGELOG.md",
+            "@type": "File",
+            "description": "Information on changes made to the pipeline"
+        },
+        {
+            "@id": "LICENSE",
+            "@type": "File",
+            "description": "The license - should be MIT"
+        },
+        {
+            "@id": "CODE_OF_CONDUCT.md",
+            "@type": "File",
+            "description": "The nf-core code of conduct"
+        },
+        {
+            "@id": "CITATIONS.md",
+            "@type": "File",
+            "description": "Citations needed when using the pipeline"
+        },
+        {
+            "@id": "modules.json",
+            "@type": "File",
+            "description": "Version information for modules from nf-core/modules"
+        },
+        {
+            "@id": "docs/usage.md",
+            "@type": "File",
+            "description": "Usage documentation"
+        },
+        {
+            "@id": "docs/output.md",
+            "@type": "File",
+            "description": "Output documentation"
+        },
+        {
+            "@id": ".nf-core.yml",
+            "@type": "File",
+            "description": "nf-core configuration file, configuring template features and linting rules"
+        },
+        {
+            "@id": ".pre-commit-config.yaml",
+            "@type": "File",
+            "description": "Configuration file for pre-commit hooks"
+        },
+        {
+            "@id": ".prettierignore",
+            "@type": "File",
+            "description": "Ignore file for prettier"
+        },
+        {
+            "@id": "https://nf-co.re/",
+            "@type": "Organization",
+            "name": "nf-core",
+            "url": "https://nf-co.re/"
+        }
+    ]
+}

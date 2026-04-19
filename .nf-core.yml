@@ -1,2 +1,13 @@
 repository_type: pipeline
-nf_core_version: "2.14.1"
+
+nf_core_version: 3.5.2
+
+lint: {}
+
+template:
+  org: nf-core
+  name: sars
+  description: SARS-CoV-2 Nanopore analysis pipeline with consensus assembly, QC, and mutation reporting
+  author: Rasmus Kopperud Riis
+  version: 1.0dev
+  is_nfcore: true
